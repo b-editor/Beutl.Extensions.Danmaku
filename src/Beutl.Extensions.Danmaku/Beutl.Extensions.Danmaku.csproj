@@ -1,0 +1,37 @@
+<Project Sdk="Beutl.Extensibility.Sdk/2.0.0-preview.8">
+
+    <PropertyGroup>
+        <PackageId>Beutl.Extensions.Danmaku</PackageId>
+        <Title>コメント弾幕</Title>
+        <Description>コメントファイルを読み込み、画面を右から左へ流れるコメント弾幕を生成します</Description>
+        <PackageTags>caption,comment,danmaku,弾幕,コメント</PackageTags>
+        <Version>0.1.0</Version>
+        <AssemblyVersion>0.1.0.0</AssemblyVersion>
+        <Authors>Yuto Terada</Authors>
+        <BeutlAutoReferenceSourceGenerators>false</BeutlAutoReferenceSourceGenerators>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference
+            Include="Beutl.Engine.SourceGenerators"
+            OutputItemType="Analyzer"
+            ReferenceOutputAssembly="false"
+            Version="2.0.0-preview.8"
+            PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Beutl.Extensions.Danmaku.Tests" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+        <!-- The icons Beutl's own tool tabs use. Beutl ships these assemblies, so compile against the same version
+             and leave them, and what they pull in (such as native SkiaSharp), out of the output: at run time the
+             extension uses Beutl's copies. Same exclusion as the SDK applies to the Beutl packages. -->
+        <PackageReference Include="FluentIcons.Avalonia.Fluent" Version="2.1.343" ExcludeAssets="runtime;native" PrivateAssets="all" />
+        <PackageReference Include="FluentIcons.Common" Version="2.1.343" ExcludeAssets="runtime;native" PrivateAssets="all" />
+        <PackageReference Include="FluentIcons.Resources.Avalonia" Version="2.1.343" ExcludeAssets="runtime;native" PrivateAssets="all" />
+    </ItemGroup>
+
+</Project>
