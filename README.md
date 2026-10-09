@@ -1,5 +1,7 @@
 # Beutl.Extensions.Danmaku
 
+<img src="assets/icon.png" width="96" height="96" alt="">
+
 画面を右から左へ流れるコメント弾幕を表示するBeutlの拡張機能です。コメントはファイルからの取り込み、配信サイトからのダウンロード、手入力で用意し、要素の中に保存します。
 
 ## 使い方
