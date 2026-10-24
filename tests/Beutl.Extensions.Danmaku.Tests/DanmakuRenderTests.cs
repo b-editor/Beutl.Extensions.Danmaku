@@ -13,7 +13,7 @@ public class DanmakuRenderTests
     private static DanmakuDrawable CreateDrawable(string comments)
     {
         var drawable = new DanmakuDrawable();
-        drawable.Comments.CurrentValue = new DanmakuCommentList(CommentParser.Parse(comments));
+        drawable.Comments.Value = new DanmakuCommentList(CommentParser.Parse(comments));
         return drawable;
     }
 
@@ -104,7 +104,7 @@ public class DanmakuRenderTests
     {
         string comments = "0.0\tue blue\tずらす";
         DanmakuDrawable drawable = CreateDrawable(comments);
-        drawable.TimeOffset.CurrentValue = TimeSpan.FromSeconds(5);
+        drawable.TimeOffset.Value = MediaTime.FromSeconds(5);
         Scene scene = HeadlessScene.Create((drawable, TimeSpan.FromSeconds(10)));
 
         using Bitmap before = HeadlessScene.Render(scene, TimeSpan.FromSeconds(1));
@@ -118,16 +118,48 @@ public class DanmakuRenderTests
     public void SurvivesSerializationRoundTrip()
     {
         string comments = "1.0\t\tテスト";
-        var element = new Element { Length = TimeSpan.FromSeconds(5) };
+        var element = new Element { Length = { Value = MediaTime.FromSeconds(5) } };
         DanmakuDrawable original = CreateDrawable(comments);
-        original.FontScale.CurrentValue = 150f;
+        original.FontScale.Value = 150f;
         element.AddObject(original);
 
         JsonObject json = CoreSerializer.SerializeToJsonObject(element);
         var restored = (DanmakuDrawable)((Element)CoreSerializer.DeserializeFromJsonObject(json, typeof(Element))).Objects.Single();
 
-        Assert.That(restored.Comments.CurrentValue, Is.EqualTo(original.Comments.CurrentValue));
-        Assert.That(restored.FontScale.CurrentValue, Is.EqualTo(150f));
+        Assert.That(restored.Comments.Value, Is.EqualTo(original.Comments.Value));
+        Assert.That(restored.FontScale.Value, Is.EqualTo(150f));
+    }
+
+    [TestCase(1.25)]
+    [TestCase(-2.5)]
+    public void Preview8TimesAndCommentsSurviveSavingAsPreview9(double offset)
+    {
+        var element = new Element { Length = { Value = MediaTime.FromSeconds(10) } };
+        DanmakuDrawable original = CreateDrawable("1.25\tue red\t保存されたコメント");
+        element.AddObject(original);
+        JsonObject json = CoreSerializer.SerializeToJsonObject(element);
+        json["minAppVersion"] = "2.0.0-preview.8";
+        json["Start"] = "00:00:01";
+        json["Length"] = "00:00:10";
+        json["Objects"]![0]!["TimeOffset"] = TimeSpan.FromSeconds(offset).ToString("c", System.Globalization.CultureInfo.InvariantCulture);
+        var uri = new Uri(Path.Combine(TestContext.CurrentContext.WorkDirectory, $"preview8-{Guid.NewGuid():N}.belm"));
+        File.WriteAllText(uri.LocalPath, json.ToJsonString());
+
+        Element restored = CoreSerializer.RestoreFromUri<Element>(uri);
+        var drawable = restored.Objects.OfType<DanmakuDrawable>().Single();
+        Assert.That(drawable.TimeOffset.Value, Is.EqualTo(MediaTime.FromSeconds(offset)));
+        Assert.That(drawable.Comments.Value, Is.EqualTo(original.Comments.Value));
+        Assert.That(restored.Start.Value, Is.EqualTo(MediaTime.FromSeconds(1)));
+        Assert.That(restored.Length.Value, Is.EqualTo(MediaTime.FromSeconds(10)));
+
+        CoreSerializer.StoreToUri(restored, uri);
+        JsonNode saved = JsonNode.Parse(File.ReadAllText(uri.LocalPath))!;
+        Assert.That(saved["minAppVersion"]!.GetValue<string>(), Is.EqualTo("2.0.0-preview.9"));
+        Assert.That(saved["Objects"]![0]!["TimeOffset"]!.GetValue<long>(), Is.EqualTo(MediaTime.FromSeconds(offset).Flicks));
+        Assert.That(saved["Objects"]![0]!["Comments"]![0]![0]!.GetValue<double>(), Is.EqualTo(1.25));
+        var reread = CoreSerializer.RestoreFromUri<Element>(uri).Objects.OfType<DanmakuDrawable>().Single();
+        Assert.That(reread.TimeOffset.Value, Is.EqualTo(drawable.TimeOffset.Value));
+        Assert.That(reread.Comments.Value, Is.EqualTo(original.Comments.Value));
     }
 
     [Test]
@@ -143,14 +175,14 @@ public class DanmakuRenderTests
         Element back = HeadlessScene.Split(split, front, TimeSpan.FromSeconds(2));
 
         var backDrawable = back.Objects.OfType<DanmakuDrawable>().Single();
-        Assert.That(backDrawable.TimeOffset.CurrentValue, Is.EqualTo(TimeSpan.FromSeconds(-2)));
-        Assert.That(front.Objects.OfType<DanmakuDrawable>().Single().TimeOffset.CurrentValue, Is.EqualTo(TimeSpan.Zero));
-        Assert.That(backDrawable.Comments.CurrentValue.Count, Is.EqualTo(2), "Both halves keep every comment.");
+        Assert.That(backDrawable.TimeOffset.Value, Is.EqualTo(MediaTime.FromSeconds(-2)));
+        Assert.That(front.Objects.OfType<DanmakuDrawable>().Single().TimeOffset.Value, Is.EqualTo(MediaTime.Zero));
+        Assert.That(backDrawable.Comments.Value.Count, Is.EqualTo(2), "Both halves keep every comment.");
 
         // Fitting the back half to its content still ends where the comments end.
-        whole.Children[0].Objects.OfType<DanmakuDrawable>().Single().TryGetOriginalDuration(out TimeSpan wholeDuration);
-        Assert.That(backDrawable.TryGetOriginalDuration(out TimeSpan backDuration), Is.True);
-        Assert.That(backDuration, Is.EqualTo(wholeDuration - TimeSpan.FromSeconds(2)));
+        whole.Children[0].Objects.OfType<DanmakuDrawable>().Single().TryGetOriginalDuration(out MediaTime wholeDuration);
+        Assert.That(backDrawable.TryGetOriginalDuration(out MediaTime backDuration), Is.True);
+        Assert.That(backDuration, Is.EqualTo(wholeDuration - MediaTime.FromSeconds(2)));
 
         // At the cut, the first comment is half way across; later, the second one has come in.
         foreach (double seconds in new[] { 2.0, 3.5 })

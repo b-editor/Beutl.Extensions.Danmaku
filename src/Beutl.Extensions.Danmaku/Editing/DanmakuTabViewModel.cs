@@ -149,7 +149,7 @@ public sealed class DanmakuTabViewModel : IToolContext
     public void SelectTargetInTimeline()
     {
         if (_selection != null && TargetElement.Value is { } element)
-            _selection.SelectedObject.Value = element;
+            _selection.Select(element);
     }
 
     public void AddAtCurrentTime()
@@ -159,12 +159,12 @@ public sealed class DanmakuTabViewModel : IToolContext
 
         TimeSpan time = TimeSpan.Zero;
         if (_clock != null && TargetElement.Value is { } element)
-            time = _clock.CurrentTime.Value - element.Start - drawable.TimeOffset.CurrentValue;
+            time = (_clock.CurrentTime.Value - element.Start.Value - drawable.TimeOffset.Value).ToTimeSpan();
         if (time < TimeSpan.Zero)
             time = TimeSpan.Zero;
 
         var comment = new DanmakuComment(time, "コメント");
-        Commit(drawable.Comments.CurrentValue.Add(comment), "コメントを追加");
+        Commit(drawable.Comments.Value.Add(comment), "コメントを追加");
 
         RequestFocus(comment);
     }
@@ -173,7 +173,7 @@ public sealed class DanmakuTabViewModel : IToolContext
     public void Seek(CommentRowViewModel row)
     {
         if (_clock != null && TargetElement.Value is { } element && Target.Value is { } drawable)
-            _clock.CurrentTime.Value = element.Start + drawable.TimeOffset.CurrentValue + row.Comment.Time;
+            _clock.Seek(element.Start.Value + drawable.TimeOffset.Value + MediaTime.FromTimeSpan(row.Comment.Time));
     }
 
     /// <summary>Sets the comment's time to the playhead.</summary>
@@ -181,7 +181,7 @@ public sealed class DanmakuTabViewModel : IToolContext
     {
         if (_clock != null && TargetElement.Value is { } element && Target.Value is { } drawable)
         {
-            TimeSpan time = _clock.CurrentTime.Value - element.Start - drawable.TimeOffset.CurrentValue;
+            TimeSpan time = (_clock.CurrentTime.Value - element.Start.Value - drawable.TimeOffset.Value).ToTimeSpan();
             row.TimeText = CommentWriter.FormatTime(time < TimeSpan.Zero ? TimeSpan.Zero : time);
         }
     }
@@ -193,12 +193,12 @@ public sealed class DanmakuTabViewModel : IToolContext
 
         int[] indices = rows.Select(r => r.Index).ToArray();
         if (indices.Length > 0)
-            Commit(drawable.Comments.CurrentValue.RemoveAt(indices), "コメントを削除");
+            Commit(drawable.Comments.Value.RemoveAt(indices), "コメントを削除");
     }
 
     public void ClearAll()
     {
-        if (Target.Value is { } drawable && drawable.Comments.CurrentValue.Count > 0)
+        if (Target.Value is { } drawable && drawable.Comments.Value.Count > 0)
             Commit(DanmakuCommentList.Empty, "コメントをすべて削除");
     }
 
@@ -243,8 +243,8 @@ public sealed class DanmakuTabViewModel : IToolContext
 
         try
         {
-            CommentFile.Write(path, drawable.Comments.CurrentValue.Items);
-            Status.Value = $"{drawable.Comments.CurrentValue.Count:N0} 件を書き出しました";
+            CommentFile.Write(path, drawable.Comments.Value.Items);
+            Status.Value = $"{drawable.Comments.Value.Count:N0} 件を書き出しました";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -340,7 +340,7 @@ public sealed class DanmakuTabViewModel : IToolContext
         if (_committing || Target.Value is not { } drawable)
             return;
 
-        DanmakuCommentList list = drawable.Comments.CurrentValue;
+        DanmakuCommentList list = drawable.Comments.Value;
         if (row.Index >= list.Count)
             return;
 
@@ -370,7 +370,7 @@ public sealed class DanmakuTabViewModel : IToolContext
         if (Target.Value is not { } drawable)
             return;
 
-        DanmakuCommentList current = drawable.Comments.CurrentValue;
+        DanmakuCommentList current = drawable.Comments.Value;
         DanmakuCommentList next = ReplaceOnImport.Value ? new DanmakuCommentList(comments) : current.AddRange(comments);
         if (!next.Equals(current))
             Commit(next, commandName);
@@ -384,7 +384,7 @@ public sealed class DanmakuTabViewModel : IToolContext
         _committing = true;
         try
         {
-            drawable.Comments.CurrentValue = list;
+            drawable.Comments.Value = list;
             _history?.Commit(commandName);
         }
         finally
@@ -426,8 +426,8 @@ public sealed class DanmakuTabViewModel : IToolContext
         }
 
         TargetDescription.Value = element == null ? ""
-            : !string.IsNullOrWhiteSpace(element.Name) ? $"要素「{element.Name}」"
-            : $"{CommentWriter.FormatTime(element.Start)} から始まる要素";
+            : !string.IsNullOrWhiteSpace(element.Name.Value) ? $"要素「{element.Name.Value}」"
+            : $"{CommentWriter.FormatTime(element.Start.Value.ToTimeSpan())} から始まる要素";
     }
 
     private void OnCommentsChanged(object? sender, PropertyValueChangedEventArgs<DanmakuCommentList> e)
@@ -441,7 +441,7 @@ public sealed class DanmakuTabViewModel : IToolContext
 
     private void SyncRows()
     {
-        DanmakuCommentList list = Target.Value?.Comments.CurrentValue ?? DanmakuCommentList.Empty;
+        DanmakuCommentList list = Target.Value?.Comments.Value ?? DanmakuCommentList.Empty;
         if (list.Count == _allRows.Count)
         {
             // Update in place so the table keeps its scroll position and focus.
@@ -489,7 +489,7 @@ public sealed class DanmakuTabViewModel : IToolContext
         json[nameof(ReplaceOnImport)] = ReplaceOnImport.Value;
         // A tab restored with the layout finds its object again by id.
         if (_bound != null)
-            json["Target"] = _bound.Id.ToString();
+            json["Target"] = _bound.Id.Value.ToString();
     }
 
     public void ReadFromJson(JsonObject json)
@@ -511,7 +511,7 @@ public sealed class DanmakuTabViewModel : IToolContext
         {
             foreach (IHierarchical child in node.HierarchicalChildren)
             {
-                if (child is DanmakuDrawable drawable && drawable.Id == id)
+                if (child is DanmakuDrawable drawable && drawable.Id.Value == id)
                     return drawable;
                 if (Find(child, id) is { } found)
                     return found;

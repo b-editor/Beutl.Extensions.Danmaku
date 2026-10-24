@@ -11,7 +11,9 @@ namespace Beutl.Extensions.Danmaku.Tests;
 public sealed class HeadlessApp : Application
 {
     public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<HeadlessApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions());
+        AppBuilder.Configure<HeadlessApp>()
+            .UseSkia()
+            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 
     public override void Initialize()
     {
