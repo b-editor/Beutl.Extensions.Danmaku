@@ -5,8 +5,8 @@
         <Title>コメント弾幕</Title>
         <Description>コメントファイルを読み込み、画面を右から左へ流れるコメント弾幕を生成します</Description>
         <PackageTags>caption,comment,danmaku,弾幕,コメント</PackageTags>
-        <Version>0.1.0</Version>
-        <AssemblyVersion>0.1.0.0</AssemblyVersion>
+        <Version>0.1.1</Version>
+        <AssemblyVersion>0.1.1.0</AssemblyVersion>
         <Authors>Yuto Terada</Authors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageIcon>icon.png</PackageIcon>
