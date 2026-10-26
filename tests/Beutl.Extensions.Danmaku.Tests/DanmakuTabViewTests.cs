@@ -299,14 +299,14 @@ public class DanmakuTabViewTests
         Choice(view, "普通").SelectedItem = "小";
         Dispatcher.UIThread.RunJobs();
 
-        DanmakuComment comment = f.Drawable.Comments.CurrentValue.Items.Single(c => c.Text == "いち");
+        DanmakuComment comment = f.Drawable.Comments.Value.Items.Single(c => c.Text == "いち");
         Assert.That(comment.Color, Is.EqualTo(Beutl.Media.Color.FromArgb(255, 0, 0, 255)));
         Assert.That(comment.Position, Is.EqualTo(CommentPosition.Bottom));
         Assert.That(comment.Size, Is.EqualTo(CommentSize.Small));
 
         // White is the default, so picking it clears the colour.
         Find<Button>(view).Single(b => ToolTip.GetTip(b) as string == "白").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-        Assert.That(f.Drawable.Comments.CurrentValue.Items.Single(c => c.Text == "いち").Color, Is.Null);
+        Assert.That(f.Drawable.Comments.Value.Items.Single(c => c.Text == "いち").Color, Is.Null);
     }
 
     [AvaloniaTest]
@@ -420,6 +420,14 @@ public class DanmakuTabViewTests
             Assert.That(titleOrigin.X, Is.GreaterThan(listOrigin.X + list.Bounds.Width));
         else
             Assert.That(titleOrigin.Y, Is.GreaterThan(listOrigin.Y + list.Bounds.Height));
+
+        string directory = System.IO.Path.Combine(TestContext.CurrentContext.WorkDirectory, "rendered");
+        System.IO.Directory.CreateDirectory(directory);
+        string path = System.IO.Path.Combine(directory, $"danmaku-tab-{width}.png");
+        using var frame = window.CaptureRenderedFrame();
+        Assert.That(frame, Is.Not.Null);
+        frame!.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+        TestContext.AddTestAttachment(path);
     }
 
     private static (IPropertyEditorContext Context, Control Control) CreateCommentEditor(DanmakuDrawable drawable, IServiceProvider? services)
@@ -428,13 +436,24 @@ public class DanmakuTabViewTests
         List<IPropertyAdapter> adapters = drawable.Properties.Select(p => (IPropertyAdapter)Activator.CreateInstance(
             typeof(EnginePropertyAdapter<>).MakeGenericType(p.ValueType), p, drawable)!).ToList();
 
-        IPropertyAdapter[] claimed = adapters.Where(a => extension.MatchProperty([a]).Any()).ToArray();
+        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var registry = (PropertyEditorRegistry)typeof(PropertyEditorExtension).GetProperty("Registry", flags)!.GetValue(extension)!;
+        var registrations = (System.Collections.IEnumerable)typeof(PropertyEditorRegistry).GetProperty("Registrations", flags)!.GetValue(registry)!;
+        object registration = registrations.Cast<object>().Single();
+        Type registrationType = registration.GetType();
+        var valueType = (Type)registrationType.GetProperty("ValueType")!.GetValue(registration)!;
+        IPropertyAdapter[] claimed = adapters.Where(a => a.PropertyType == valueType).ToArray();
         Assert.That(claimed.Select(a => a.GetEngineProperty()!.Name), Is.EqualTo(new[] { nameof(DanmakuDrawable.Comments) }));
-        Assert.That(extension.TryCreateContext(claimed, out IPropertyEditorContext? context), Is.True);
+        var createContext = (Func<IReadOnlyList<IPropertyAdapter>, IPropertyEditorContext?>)registrationType.GetProperty("CreateContext")!.GetValue(registration)!;
+        IPropertyEditorContext? context = createContext(claimed);
+        Assert.That(context, Is.Not.Null);
         // The host visits each context with its property panel, which resolves the editor's services.
         if (services != null)
             context!.Accept(new Visitor(services));
-        Assert.That(extension.TryCreateControl(context!, out Control? control), Is.True);
+        var createControl = (Delegate)registrationType.GetProperty("CreateControl")!.GetValue(registration)!;
+        object panel = Enum.Parse(createControl.GetType().GenericTypeArguments[1], "Panel");
+        var control = (Control?)createControl.DynamicInvoke(context!, panel);
+        Assert.That(control, Is.Not.Null);
         return (context!, control!);
     }
 
@@ -442,7 +461,7 @@ public class DanmakuTabViewTests
     public void PropertyPanelShowsTheCommentCount()
     {
         var drawable = new DanmakuDrawable();
-        drawable.Comments.CurrentValue = new DanmakuCommentList(CommentParser.Parse("1\t\ta\n2\t\tb"));
+        drawable.Comments.Value = new DanmakuCommentList(CommentParser.Parse("1\t\ta\n2\t\tb"));
         (_, Control control) = CreateCommentEditor(drawable, null);
         Show(control);
 
@@ -452,7 +471,7 @@ public class DanmakuTabViewTests
         // Without an editor (the settings page, the node graph) there is no tab to open.
         Assert.That(Find<Button>(control).Single().IsEnabled, Is.False);
 
-        drawable.Comments.CurrentValue = drawable.Comments.CurrentValue.Add(new DanmakuComment(TimeSpan.Zero, "c"));
+        drawable.Comments.Value = drawable.Comments.Value.Add(new DanmakuComment(TimeSpan.Zero, "c"));
         Dispatcher.UIThread.RunJobs();
         Assert.That(Find<TextBlock>(control).Select(t => t.Text), Does.Contain("3 件"));
     }

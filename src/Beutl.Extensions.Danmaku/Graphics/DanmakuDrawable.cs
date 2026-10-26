@@ -24,32 +24,32 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
     }
 
     [Display(Name = "コメント", Description = "ツールタブ「コメント弾幕」で取り込みや編集ができます")]
-    public IProperty<DanmakuCommentList> Comments { get; } = Property.Create(DanmakuCommentList.Empty);
+    public IExpressionProperty<DanmakuCommentList> Comments { get; } = Property.CreateExpression(DanmakuCommentList.Empty);
 
     [Display(Name = "フォント")]
-    public IProperty<FontFamily?> FontFamily { get; } = Property.Create<FontFamily?>(DefaultFont());
+    public IExpressionProperty<FontFamily?> FontFamily { get; } = Property.CreateExpression<FontFamily?>(DefaultFont());
 
     [Range(10f, 400f)]
     [Display(Name = "文字の大きさ (%)")]
-    public IProperty<float> FontScale { get; } = Property.Create(100f);
+    public IExpressionProperty<float> FontScale { get; } = Property.CreateExpression(100f);
 
     [Range(0.5f, 30f)]
     [Display(Name = "流れるコメントの表示時間 (秒)")]
-    public IProperty<float> ScrollDuration { get; } = Property.Create(4f);
+    public IExpressionProperty<float> ScrollDuration { get; } = Property.CreateExpression(4f);
 
     [Range(0.5f, 30f)]
     [Display(Name = "固定コメントの表示時間 (秒)")]
-    public IProperty<float> FixedDuration { get; } = Property.Create(3f);
+    public IExpressionProperty<float> FixedDuration { get; } = Property.CreateExpression(3f);
 
     [Range(0f, 50f)]
     [Display(Name = "縁取りの太さ (%)", Description = "文字の大きさに対する縁取りの太さ")]
-    public IProperty<float> OutlineWidth { get; } = Property.Create(8f);
+    public IExpressionProperty<float> OutlineWidth { get; } = Property.CreateExpression(8f);
 
     [Display(Name = "時刻のずれ", Description = "コメントの時刻にこの時間を足して表示します")]
-    public IProperty<TimeSpan> TimeOffset { get; } = Property.Create(TimeSpan.Zero);
+    public IExpressionProperty<MediaTime> TimeOffset { get; } = Property.CreateExpression(MediaTime.Zero);
 
     [Display(Name = "あふれたコメントを表示", Description = "空いている行がないとき、ランダムな高さに重ねて表示します")]
-    public IProperty<bool> ShowOverflow { get; } = Property.Create(true);
+    public IExpressionProperty<bool> ShowOverflow { get; } = Property.CreateExpression(true);
 
     private static FontFamily DefaultFont()
     {
@@ -59,32 +59,32 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
 
     public bool HasOriginalDuration()
     {
-        return Comments.CurrentValue.Count > 0;
+        return Comments.Value.Count > 0;
     }
 
-    public bool TryGetOriginalDuration(out TimeSpan timeSpan)
+    public bool TryGetOriginalDuration(out MediaTime timeSpan)
     {
-        timeSpan = TimeSpan.Zero;
-        DanmakuCommentList comments = Comments.CurrentValue;
+        timeSpan = MediaTime.Zero;
+        DanmakuCommentList comments = Comments.Value;
         if (comments.Count == 0)
             return false;
 
         // Only the timing settings matter here; the screen size does not move a comment's display time.
         var settings = new DanmakuLayoutSettings(
-            1, 1, TimeSpan.FromSeconds(ScrollDuration.CurrentValue), TimeSpan.FromSeconds(FixedDuration.CurrentValue));
+            1, 1, TimeSpan.FromSeconds(ScrollDuration.Value), TimeSpan.FromSeconds(FixedDuration.Value));
         TimeSpan lastEnd = comments.Items.Max(c => DanmakuLayout.GetTimeRange(c, settings).End);
-        timeSpan = lastEnd + TimeOffset.CurrentValue;
-        return timeSpan > TimeSpan.Zero;
+        timeSpan = MediaTime.FromTimeSpan(lastEnd) + TimeOffset.Value;
+        return timeSpan > MediaTime.Zero;
     }
 
     /// <summary>
     /// Keeps the comments where they were when the element is split. The back half starts later, so its comments move
     /// back by as much; both halves keep every comment, as both halves of a split video keep the whole file.
     /// </summary>
-    public void NotifySplitted(bool backward, TimeSpan startDelta, TimeSpan durationDelta)
+    public void NotifySplitted(bool backward, MediaTime startDelta, MediaTime durationDelta)
     {
         if (backward)
-            TimeOffset.CurrentValue -= startDelta;
+            TimeOffset.Value -= startDelta;
     }
 
     protected override Size MeasureCore(Size availableSize, Drawable.Resource resource)
@@ -145,9 +145,9 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
 
         internal TimeSpan CommentTime { get; private set; }
 
-        partial void PostUpdate(DanmakuDrawable obj, CompositionContext context)
+        partial void PostReconcile(DanmakuDrawable obj, CompositionContext context)
         {
-            TimeSpan time = context.Time - obj.TimeRange.Start - TimeOffset;
+            TimeSpan time = (context.Time - obj.TimeRange.Value.Start - TimeOffset).ToTimeSpan();
             if (time != CommentTime)
             {
                 CommentTime = time;
@@ -205,10 +205,10 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
             if (!_pens.TryGetValue((outline, key), out Pen.Resource? pen))
             {
                 var penObject = new Pen();
-                penObject.Brush.CurrentValue = new SolidColorBrush(outline);
-                penObject.Thickness.CurrentValue = key / 4f;
-                penObject.StrokeJoin.CurrentValue = StrokeJoin.Round;
-                penObject.StrokeAlignment.CurrentValue = StrokeAlignment.Outside;
+                penObject.Brush.Value = new SolidColorBrush(outline);
+                penObject.Thickness.Value = key / 4f;
+                penObject.StrokeJoin.Value = StrokeJoin.Round;
+                penObject.StrokeAlignment.Value = StrokeAlignment.Outside;
                 pen = penObject.ToResource(CompositionContext.Default);
                 _pens[(outline, key)] = pen;
             }

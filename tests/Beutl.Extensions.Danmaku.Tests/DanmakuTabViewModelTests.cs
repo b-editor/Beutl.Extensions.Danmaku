@@ -36,8 +36,8 @@ public class DanmakuTabViewModelTests
 
         // Selecting other things on the timeline does not change what the tab edits.
         DanmakuDrawable other = f.AddDanmaku("1.0\t\tべつ", TimeSpan.FromSeconds(20));
-        f.Selection.SelectedObject.Value = other.FindHierarchicalParent<Element>();
-        f.Selection.SelectedObject.Value = null;
+        f.Selection.Select(other.FindHierarchicalParent<Element>());
+        f.Selection.Select(null);
         Assert.That(f.ViewModel.Target.Value, Is.SameAs(f.Drawable));
 
         // Opening it for another object switches to that one.
@@ -125,7 +125,7 @@ public class DanmakuTabViewModelTests
         pending.SetResult([new DanmakuComment(TimeSpan.FromSeconds(1), "取得")]);
         await download;
 
-        Assert.That(other.Comments.CurrentValue.Items.Select(c => c.Text), Is.EqualTo(new[] { "べつ" }));
+        Assert.That(other.Comments.Value.Items.Select(c => c.Text), Is.EqualTo(new[] { "べつ" }));
         Assert.That(f.Texts, Has.Length.EqualTo(3));
         Assert.That(f.ViewModel.Status.Value, Does.Contain("反映していません"));
     }
@@ -202,10 +202,10 @@ public class DanmakuTabViewModelTests
         row.Text = "かえた";
         row.SizeIndex = 1;
         Assert.That(f.Texts, Is.EqualTo(new[] { "かえた", "赤いコメント", "さん" }));
-        Assert.That(f.Drawable.Comments.CurrentValue[0].Size, Is.EqualTo(CommentSize.Big));
+        Assert.That(f.Drawable.Comments.Value[0].Size, Is.EqualTo(CommentSize.Big));
 
         Assert.That(f.History.Undo(), Is.True);
-        Assert.That(f.Drawable.Comments.CurrentValue[0].Size, Is.EqualTo(CommentSize.Medium));
+        Assert.That(f.Drawable.Comments.Value[0].Size, Is.EqualTo(CommentSize.Medium));
         Assert.That(f.History.Undo(), Is.True);
         Assert.That(f.Texts[0], Is.EqualTo("いち"));
         // Undo changes the list from outside the tab; the table follows it.
@@ -236,12 +236,12 @@ public class DanmakuTabViewModelTests
     {
         using var f = new EditorFixture();
         f.ViewModel.SetTarget(f.Drawable);
-        DanmakuCommentList before = f.Drawable.Comments.CurrentValue;
+        DanmakuCommentList before = f.Drawable.Comments.Value;
         CommentRowViewModel row = f.ViewModel.Rows[1];
 
         typeof(CommentRowViewModel).GetProperty(field)!.SetValue(row, value);
 
-        Assert.That(f.Drawable.Comments.CurrentValue, Is.SameAs(before));
+        Assert.That(f.Drawable.Comments.Value, Is.SameAs(before));
         Assert.That(f.History.CanUndo, Is.False);
         Assert.That((row.TimeText, row.ColorText, row.Text), Is.EqualTo(("0:02.000", "#FF0000", "赤いコメント")));
         Assert.That(f.ViewModel.Status.Value, Does.Contain("元に戻しました"));
@@ -252,23 +252,23 @@ public class DanmakuTabViewModelTests
     {
         using var f = new EditorFixture();
         f.ViewModel.SetTarget(f.Drawable);
-        f.Drawable.TimeOffset.CurrentValue = TimeSpan.FromSeconds(0.5);
-        f.Clock.CurrentTime.Value = TimeSpan.FromSeconds(3);
+        f.Drawable.TimeOffset.Value = MediaTime.FromSeconds(0.5);
+        f.Clock.Seek(MediaTime.FromSeconds(3));
         CommentRowViewModel? added = null;
         f.ViewModel.RowFocusRequested += row => added = row;
 
         f.ViewModel.AddAtCurrentTime();
 
         // The element starts at 1 s and the comments are offset by 0.5 s.
-        DanmakuComment comment = f.Drawable.Comments.CurrentValue.Items.Single(c => c.Text == "コメント");
+        DanmakuComment comment = f.Drawable.Comments.Value.Items.Single(c => c.Text == "コメント");
         Assert.That(comment.Time, Is.EqualTo(TimeSpan.FromSeconds(1.5)));
         Assert.That(added, Is.Not.Null);
         Assert.That(added!.Comment, Is.SameAs(comment));
         Assert.That(f.ViewModel.Rows, Has.Count.EqualTo(4));
 
-        f.Clock.CurrentTime.Value = TimeSpan.Zero;
+        f.Clock.Seek(MediaTime.Zero);
         f.ViewModel.AddAtCurrentTime();
-        Assert.That(f.Drawable.Comments.CurrentValue[0].Time, Is.EqualTo(TimeSpan.Zero));
+        Assert.That(f.Drawable.Comments.Value[0].Time, Is.EqualTo(TimeSpan.Zero));
     }
 
     [AvaloniaTest]
@@ -369,15 +369,15 @@ public class DanmakuTabViewModelTests
     {
         using var f = new EditorFixture();
         f.ViewModel.SetTarget(f.Drawable);
-        f.Drawable.TimeOffset.CurrentValue = TimeSpan.FromSeconds(0.5);
+        f.Drawable.TimeOffset.Value = MediaTime.FromSeconds(0.5);
 
         // "赤いコメント" is at 2 s; the element starts at 1 s and the comments are offset by 0.5 s.
         f.ViewModel.Seek(f.ViewModel.Rows[1]);
-        Assert.That(f.Clock.CurrentTime.Value, Is.EqualTo(TimeSpan.FromSeconds(3.5)));
+        Assert.That(f.Clock.CurrentTime.Value, Is.EqualTo(MediaTime.FromSeconds(3.5)));
 
-        f.Clock.CurrentTime.Value = TimeSpan.FromSeconds(6);
+        f.Clock.Seek(MediaTime.FromSeconds(6));
         f.ViewModel.SetTimeToPlayhead(f.ViewModel.Rows[1]);
-        Assert.That(f.Drawable.Comments.CurrentValue.Items.Single(c => c.Text == "赤いコメント").Time, Is.EqualTo(TimeSpan.FromSeconds(4.5)));
+        Assert.That(f.Drawable.Comments.Value.Items.Single(c => c.Text == "赤いコメント").Time, Is.EqualTo(TimeSpan.FromSeconds(4.5)));
     }
 
     [AvaloniaTest]
@@ -405,7 +405,7 @@ public class DanmakuTabViewModelTests
 
         f.ViewModel.ExportFile(path);
 
-        Assert.That(new DanmakuCommentList(CommentFile.Read(path)), Is.EqualTo(f.Drawable.Comments.CurrentValue));
+        Assert.That(new DanmakuCommentList(CommentFile.Read(path)), Is.EqualTo(f.Drawable.Comments.Value));
         Assert.That(f.ViewModel.Status.Value, Does.Contain("3 件"));
     }
 

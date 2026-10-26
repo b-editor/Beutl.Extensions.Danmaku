@@ -1,3 +1,4 @@
+using Beutl.Collections;
 using Beutl.Editor;
 using Beutl.Editor.Observers;
 using Beutl.Editor.Services;
@@ -21,15 +22,20 @@ internal sealed class EditorFixture : IDisposable
     {
         Scene = new Scene(1920, 1080, "Fixture");
         Drawable = new DanmakuDrawable();
-        Drawable.Comments.CurrentValue = new DanmakuCommentList(CommentParser.Parse(comments));
-        Element = new Element { Start = TimeSpan.FromSeconds(1), Length = TimeSpan.FromSeconds(10), ZIndex = 2 };
+        Drawable.Comments.Value = new DanmakuCommentList(CommentParser.Parse(comments));
+        Element = new Element
+        {
+            Start = { Value = MediaTime.FromSeconds(1) },
+            Length = { Value = MediaTime.FromSeconds(10) },
+            ZIndex = { Value = 2 },
+        };
         Element.AddObject(Drawable);
         Scene.AddChild(Element);
 
         // Wired like the editor's EditViewModel: the observer reports changes in the scene to the history.
         var sequence = new OperationSequenceGenerator();
         _observer = new CoreObjectOperationObserver(null, Scene, sequence);
-        History = new HistoryManager(Scene, sequence);
+        History = new HistoryManager(sequence);
         _historySubscription = History.Subscribe(_observer);
         _services[typeof(IEditorSelection)] = Selection;
         _services[typeof(IEditorClock)] = Clock;
@@ -59,14 +65,19 @@ internal sealed class EditorFixture : IDisposable
     public DanmakuDrawable AddDanmaku(string comments, TimeSpan start)
     {
         var drawable = new DanmakuDrawable();
-        drawable.Comments.CurrentValue = new DanmakuCommentList(CommentParser.Parse(comments));
-        var element = new Element { Start = start, Length = TimeSpan.FromSeconds(10), ZIndex = 5 };
+        drawable.Comments.Value = new DanmakuCommentList(CommentParser.Parse(comments));
+        var element = new Element
+        {
+            Start = { Value = MediaTime.FromTimeSpan(start) },
+            Length = { Value = MediaTime.FromSeconds(10) },
+            ZIndex = { Value = 5 },
+        };
         element.AddObject(drawable);
         Scene.AddChild(element);
         return drawable;
     }
 
-    public string[] Texts => Drawable.Comments.CurrentValue.Items.Select(c => c.Text).ToArray();
+    public string[] Texts => Drawable.Comments.Value.Items.Select(c => c.Text).ToArray();
 
     public object? GetService(Type type) => _services.GetValueOrDefault(type);
 
@@ -81,16 +92,32 @@ internal sealed class EditorFixture : IDisposable
 
 internal sealed class FakeSelection : IEditorSelection
 {
-    public IReactiveProperty<CoreObject?> SelectedObject { get; } = new ReactivePropertySlim<CoreObject?>();
+    private readonly ReactivePropertySlim<CoreObject?> _selectedObject = new();
+
+    public IReadOnlyReactiveProperty<CoreObject?> SelectedObject => _selectedObject;
 
     public IReadOnlyReactiveProperty<int?> SelectedLayerNumber { get; } = new ReactivePropertySlim<int?>();
+
+    public ICoreList<Element> SelectedElements { get; } = new CoreList<Element>();
+
+    public void Select(CoreObject? obj, bool notifyIfSelected = false)
+    {
+        _selectedObject.Value = obj;
+        SelectedElements.Clear();
+        if (obj is Element element)
+            SelectedElements.Add(element);
+    }
 }
 
 internal sealed class FakeClock : IEditorClock
 {
-    public IReactiveProperty<TimeSpan> CurrentTime { get; } = new ReactivePropertySlim<TimeSpan>();
+    private readonly ReactivePropertySlim<MediaTime> _currentTime = new();
 
-    public IReadOnlyReactiveProperty<TimeSpan> MaximumTime { get; } = new ReactivePropertySlim<TimeSpan>(TimeSpan.FromMinutes(5));
+    public IReadOnlyReactiveProperty<MediaTime> CurrentTime => _currentTime;
+
+    public IReadOnlyReactiveProperty<MediaTime> MaximumTime { get; } = new ReactivePropertySlim<MediaTime>(MediaTime.FromSeconds(300));
+
+    public void Seek(MediaTime time) => _currentTime.Value = time;
 }
 
 internal sealed class FakeEditorContext(CoreObject obj, EditorFixture fixture) : IEditorContext

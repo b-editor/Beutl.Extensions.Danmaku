@@ -14,18 +14,18 @@ public class OriginalDurationTests
     {
         var drawable = new DanmakuDrawable();
         // A scrolling comment at 1 s leaves at 1 + 4 * 3/4 = 4 s; a fixed one at 2 s leaves at 5 s.
-        drawable.Comments.CurrentValue = Comments("1.0\t\t流れる\n2.0\tue\t固定");
-        var element = new Element { Length = TimeSpan.FromSeconds(1) };
+        drawable.Comments.Value = Comments("1.0\t\t流れる\n2.0\tue\t固定");
+        var element = new Element { Length = { Value = MediaTime.FromSeconds(1) } };
         element.AddObject(drawable);
 
-        Assert.That(element.TryGetOriginalDuration(out TimeSpan duration), Is.True);
-        Assert.That(duration, Is.EqualTo(TimeSpan.FromSeconds(5)));
+        Assert.That(element.TryGetOriginalDuration(out MediaTime duration), Is.True);
+        Assert.That(duration, Is.EqualTo(MediaTime.FromSeconds(5)));
 
-        drawable.TimeOffset.CurrentValue = TimeSpan.FromSeconds(1);
-        drawable.ScrollDuration.CurrentValue = 8f;
+        drawable.TimeOffset.Value = MediaTime.FromSeconds(1);
+        drawable.ScrollDuration.Value = 8f;
         Assert.That(element.TryGetOriginalDuration(out duration), Is.True);
         // The scrolling comment now leaves at 1 + 8 * 3/4 = 7 s, plus the 1 s offset.
-        Assert.That(duration, Is.EqualTo(TimeSpan.FromSeconds(8)));
+        Assert.That(duration, Is.EqualTo(MediaTime.FromSeconds(8)));
     }
 
     [Test]
@@ -35,10 +35,10 @@ public class OriginalDurationTests
         Assert.That(drawable.HasOriginalDuration(), Is.False);
         Assert.That(drawable.TryGetOriginalDuration(out _), Is.False);
 
-        drawable.Comments.CurrentValue = Comments("1.0\t\tある");
+        drawable.Comments.Value = Comments("1.0\t\tある");
         Assert.That(drawable.HasOriginalDuration(), Is.True);
 
-        drawable.Comments.CurrentValue = Comments("# no comments");
+        drawable.Comments.Value = Comments("# no comments");
         Assert.That(drawable.HasOriginalDuration(), Is.False);
     }
 }
