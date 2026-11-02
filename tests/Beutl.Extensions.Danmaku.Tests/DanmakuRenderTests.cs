@@ -132,7 +132,7 @@ public class DanmakuRenderTests
 
     [TestCase(1.25)]
     [TestCase(-2.5)]
-    public void Preview8TimesAndCommentsSurviveSavingAsPreview9(double offset)
+    public void Preview8TimesAndCommentsSurviveSavingAtTheFormatFloor(double offset)
     {
         var element = new Element { Length = { Value = MediaTime.FromSeconds(10) } };
         DanmakuDrawable original = CreateDrawable("1.25\tue red\t保存されたコメント");
@@ -154,7 +154,7 @@ public class DanmakuRenderTests
 
         CoreSerializer.StoreToUri(restored, uri);
         JsonNode saved = JsonNode.Parse(File.ReadAllText(uri.LocalPath))!;
-        Assert.That(saved["minAppVersion"]!.GetValue<string>(), Is.EqualTo("2.0.0-preview.9"));
+        Assert.That(saved["minAppVersion"]!.GetValue<string>(), Is.EqualTo(FileFormat.Floor));
         Assert.That(saved["Objects"]![0]!["TimeOffset"]!.GetValue<long>(), Is.EqualTo(MediaTime.FromSeconds(offset).Flicks));
         Assert.That(saved["Objects"]![0]!["Comments"]![0]![0]!.GetValue<double>(), Is.EqualTo(1.25));
         var reread = CoreSerializer.RestoreFromUri<Element>(uri).Objects.OfType<DanmakuDrawable>().Single();

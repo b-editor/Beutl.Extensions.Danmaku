@@ -87,70 +87,67 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
             TimeOffset.Value -= startDelta;
     }
 
-    protected override Size MeasureCore(Size availableSize, Drawable.Resource resource)
-    {
-        return availableSize;
-    }
-
-    protected override void OnDraw(GraphicsContext2D context, Drawable.Resource resource)
-    {
-        var r = (Resource)resource;
-        Size screen = context.Size;
-        if (r.Comments is not { Count: > 0 } comments || screen.Width <= 0 || screen.Height <= 0)
-            return;
-
-        DanmakuFrameLayout layout = r.GetLayout(comments.Items, screen);
-        TimeSpan time = r.CommentTime;
-        PlacedComment[] placed = layout.Placed;
-
-        // Placements are sorted by start; none lasts longer than the longest display time.
-        int first = layout.FindFirstStartingAfter(time - layout.LongestDuration);
-        for (int i = first; i < placed.Length && placed[i].Start <= time; i++)
-        {
-            PlacedComment item = placed[i];
-            if (time >= item.End)
-                continue;
-
-            DanmakuComment comment = comments[item.Index];
-            float x = item.GetX(time, screen.Width);
-            float lineHeight = item.Height / comment.Lines.Length;
-            Brush.Resource fill = r.GetBrush(comment.FillColor);
-            Pen.Resource? pen = r.GetOutline(comment.FillColor, item.FontSize * OutlineWidthFraction(r));
-            FormattedText[] lines = layout.GetLines(i);
-            for (int line = 0; line < lines.Length; line++)
-            {
-                FormattedText text = lines[line];
-                // The stroke outline is built from the text's own pen, not the one passed to DrawText.
-                text.Pen = pen;
-
-                // Centre the font's ascent-to-descent box in the row and draw from its baseline.
-                FontMetrics metrics = text.Metrics;
-                float box = metrics.Descent - metrics.Ascent;
-                float baseline = item.Y + line * lineHeight + (lineHeight - box) / 2 - metrics.Ascent;
-                using (context.PushTransform(Matrix.CreateTranslation(x, baseline)))
-                {
-                    context.DrawText(text, fill, pen);
-                }
-            }
-        }
-    }
-
-    private static float OutlineWidthFraction(Resource r) => Math.Max(0, r.OutlineWidth) / 100f;
-
     public partial class Resource
     {
         private readonly Dictionary<Color, Brush.Resource> _brushes = [];
         private readonly Dictionary<(Color, int), Pen.Resource> _pens = [];
         private DanmakuFrameLayout? _layout;
+        private TimeSpan _commentTime;
 
-        internal TimeSpan CommentTime { get; private set; }
+        protected override Size MeasureCore(Size availableSize)
+        {
+            return availableSize;
+        }
+
+        protected override void OnDraw(GraphicsContext2D context)
+        {
+            Size screen = context.Size;
+            if (Comments is not { Count: > 0 } comments || screen.Width <= 0 || screen.Height <= 0)
+                return;
+
+            DanmakuFrameLayout layout = GetLayout(comments.Items, screen);
+            TimeSpan time = _commentTime;
+            PlacedComment[] placed = layout.Placed;
+
+            // Placements are sorted by start; none lasts longer than the longest display time.
+            int first = layout.FindFirstStartingAfter(time - layout.LongestDuration);
+            float outlineWidth = Math.Max(0, OutlineWidth) / 100f;
+            for (int i = first; i < placed.Length && placed[i].Start <= time; i++)
+            {
+                PlacedComment item = placed[i];
+                if (time >= item.End)
+                    continue;
+
+                DanmakuComment comment = comments[item.Index];
+                float x = item.GetX(time, screen.Width);
+                float lineHeight = item.Height / comment.Lines.Length;
+                Brush.Resource fill = GetBrush(comment.FillColor);
+                Pen.Resource? pen = GetOutline(comment.FillColor, item.FontSize * outlineWidth);
+                FormattedText[] lines = layout.GetLines(i);
+                for (int line = 0; line < lines.Length; line++)
+                {
+                    FormattedText text = lines[line];
+                    // The stroke outline is built from the text's own pen, not the one passed to DrawText.
+                    text.Pen = pen;
+
+                    // Centre the font's ascent-to-descent box in the row and draw from its baseline.
+                    FontMetrics metrics = text.Metrics;
+                    float box = metrics.Descent - metrics.Ascent;
+                    float baseline = item.Y + line * lineHeight + (lineHeight - box) / 2 - metrics.Ascent;
+                    using (context.PushTransform(Matrix.CreateTranslation(x, baseline)))
+                    {
+                        context.DrawText(text, fill, pen);
+                    }
+                }
+            }
+        }
 
         partial void PostReconcile(DanmakuDrawable obj, CompositionContext context)
         {
             TimeSpan time = (context.Time - obj.TimeRange.Value.Start - TimeOffset).ToTimeSpan();
-            if (time != CommentTime)
+            if (time != _commentTime)
             {
-                CommentTime = time;
+                _commentTime = time;
                 Version++;
             }
         }
@@ -166,7 +163,7 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
             _pens.Clear();
         }
 
-        internal DanmakuFrameLayout GetLayout(IReadOnlyList<DanmakuComment> comments, Size screen)
+        private DanmakuFrameLayout GetLayout(IReadOnlyList<DanmakuComment> comments, Size screen)
         {
             var settings = new DanmakuLayoutSettings(
                 screen.Width,
@@ -183,7 +180,7 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
             return _layout;
         }
 
-        internal Brush.Resource GetBrush(Color color)
+        private Brush.Resource GetBrush(Color color)
         {
             if (!_brushes.TryGetValue(color, out Brush.Resource? brush))
             {
@@ -194,7 +191,7 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
             return brush;
         }
 
-        internal Pen.Resource? GetOutline(Color fill, float thickness)
+        private Pen.Resource? GetOutline(Color fill, float thickness)
         {
             if (thickness <= 0.01f)
                 return null;
