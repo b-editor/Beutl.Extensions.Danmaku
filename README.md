@@ -102,7 +102,7 @@
 
 ## 開発
 
-`Beutl.Extensibility.Sdk` 2.0.0-preview.9 でビルドします。
+`Beutl.Extensibility.Sdk` 2.0.0-preview.10 でビルドします。
 
 ```bash
 dotnet build src/Beutl.Extensions.Danmaku
