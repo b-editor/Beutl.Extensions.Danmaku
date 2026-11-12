@@ -102,7 +102,7 @@
 
 ## 開発
 
-`Beutl.Extensibility.Sdk` 2.0.0-preview.11 でビルドします。
+`Beutl.Extensibility.Sdk` 2.0.0-preview.12 と .NET 11 SDK でビルドします。
 
 ```bash
 dotnet build src/Beutl.Extensions.Danmaku
@@ -112,7 +112,7 @@ dotnet build src/Beutl.Extensions.Danmaku
 dotnet test tests/Beutl.Extensions.Danmaku.Tests
 ```
 
-テストには、パーサーとレイアウトの単体テスト、Beutlの `SceneRenderer` でシーンをヘッドレスに描画して画素を確認するテスト、Avaloniaのヘッドレス環境でツールタブを操作するテストがあります。描画した画像は `bin/Debug/net10.0/rendered/` に保存されます。ダウンロードのテストは偽のHTTP応答と偽の yt-dlp で動き、ネットワークを使いません。
+テストには、パーサーとレイアウトの単体テスト、Beutlの `SceneRenderer` でシーンをヘッドレスに描画して画素を確認するテスト、Avaloniaのヘッドレス環境でツールタブを操作するテストがあります。描画した画像は `bin/Debug/net11.0/rendered/` に保存されます。ダウンロードのテストは偽のHTTP応答と偽の yt-dlp で動き、ネットワークを使いません。
 
 実際のサイトから取得するテストは、URLを環境変数で渡したときだけ動きます。
 
