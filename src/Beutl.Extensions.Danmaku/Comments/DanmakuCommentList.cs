@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Comments;
 
@@ -78,13 +79,13 @@ public sealed class DanmakuCommentListJsonConverter : JsonConverter<DanmakuComme
         if (reader.TokenType == JsonTokenType.Null)
             return DanmakuCommentList.Empty;
         if (reader.TokenType != JsonTokenType.StartArray)
-            throw new JsonException("コメントの一覧は配列で書く必要があります。");
+            throw new JsonException(Strings.CommentListMustBeArray);
 
         var comments = new List<DanmakuComment>();
         while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
         {
             if (reader.TokenType != JsonTokenType.StartArray)
-                throw new JsonException("コメントは [秒, コマンド, 本文] の配列で書く必要があります。");
+                throw new JsonException(Strings.CommentMustBeArray);
 
             reader.Read();
             double seconds = reader.GetDouble();
@@ -94,7 +95,7 @@ public sealed class DanmakuCommentListJsonConverter : JsonConverter<DanmakuComme
             string text = reader.GetString() ?? "";
             reader.Read();
             if (reader.TokenType != JsonTokenType.EndArray)
-                throw new JsonException("コメントの配列の要素が多すぎます。");
+                throw new JsonException(Strings.CommentArrayTooLong);
 
             if (CommentCommands.Apply(TimeSpan.FromSeconds(seconds), text, commands.Split(' ')) is { } comment)
                 comments.Add(comment);

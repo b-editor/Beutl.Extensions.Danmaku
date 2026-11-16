@@ -2,8 +2,9 @@
 
     <PropertyGroup>
         <PackageId>Beutl.Extensions.Danmaku</PackageId>
-        <Title>コメント弾幕</Title>
-        <Description>コメントファイルを読み込み、画面を右から左へ流れるコメント弾幕を生成します</Description>
+        <Title>Danmaku</Title>
+        <Description>Import, download and edit comments that scroll across the screen.</Description>
+        <NeutralLanguage>en</NeutralLanguage>
         <PackageTags>caption,comment,danmaku,弾幕,コメント</PackageTags>
         <Version>0.1.5</Version>
         <AssemblyVersion>0.1.5.0</AssemblyVersion>
@@ -24,6 +25,16 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="Beutl.Extensions.Danmaku.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Update="Properties/Strings.resx">
+            <StronglyTypedLanguage>C#</StronglyTypedLanguage>
+            <StronglyTypedNamespace>Beutl.Extensions.Danmaku.Properties</StronglyTypedNamespace>
+            <StronglyTypedClassName>Strings</StronglyTypedClassName>
+            <StronglyTypedFileName>$(IntermediateOutputPath)Strings.g.cs</StronglyTypedFileName>
+            <PublicClass>true</PublicClass>
+        </EmbeddedResource>
     </ItemGroup>
 
 

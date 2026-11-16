@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Download;
 
@@ -14,7 +15,7 @@ public sealed record CommentSource(CommentSite Site, string Url, string VideoId)
 {
     public string SiteName => Site switch
     {
-        CommentSite.Niconico => "ニコニコ動画",
+        CommentSite.Niconico => Strings.Niconico,
         CommentSite.YouTube => "YouTube",
         _ => "Twitch",
     };

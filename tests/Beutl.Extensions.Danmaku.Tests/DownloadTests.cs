@@ -7,6 +7,7 @@ using Beutl.Extensions.Danmaku.Download;
 namespace Beutl.Extensions.Danmaku.Tests;
 
 // Everything here runs offline: Twitch answers come from a fake HTTP handler and yt-dlp from a fake script.
+[SetUICulture("ja-JP")]
 public class DownloadTests
 {
     [TestCase("https://www.nicovideo.jp/watch/sm9", CommentSite.Niconico, "sm9")]

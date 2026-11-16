@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Beutl.Extensibility;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Editing;
 
@@ -12,7 +13,7 @@ public sealed class DanmakuTabExtension : ToolTabExtension
 
     public override string Name => "Danmaku editor";
 
-    public override string DisplayName => "コメント弾幕";
+    public override string DisplayName => Strings.Danmaku;
 
     // Not in the add-tab menu: the tab is opened from an object's "編集" button and edits that object.
     public override string? Header => null;
@@ -36,7 +37,7 @@ public sealed class DanmakuTabExtension : ToolTabExtension
     }
 
     /// <summary>
-    /// Shows the "コメント弾幕" tab editing <paramref name="drawable"/>: the open tab switches to it, or a new tab
+    /// Shows the Danmaku tab editing <paramref name="drawable"/>: the open tab switches to it, or a new tab
     /// is opened.
     /// </summary>
     public static bool Open(IEditorContext editorContext, Graphics.DanmakuDrawable drawable)

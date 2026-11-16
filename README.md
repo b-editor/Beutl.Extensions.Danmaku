@@ -4,6 +4,12 @@
 
 画面を右から左へ流れるコメント弾幕を表示するBeutlの拡張機能です。コメントはファイルからの取り込み、配信サイトからのダウンロード、手入力で用意し、要素の中に保存します。
 
+## 表示言語
+
+Beutl本体と同じく、英語・日本語・簡体字中国語・韓国語・スペイン語に対応しています。Beutl本体の表示言語に従い、起動時に表示言語が決まります。スペイン語は地域別の設定にも対応し、それ以外の未対応言語では英語を表示します。コメントの本文や、ファイル内の時刻・コマンドの形式は表示言語に依存しません。
+
+The extension supports the same languages as Beutl: English, Japanese, Simplified Chinese, Korean, and Spanish. It follows Beutl's display language at startup, including regional Spanish settings. Other languages fall back to English. Comment text and the time/command syntax in files are preserved across languages.
+
 ## 使い方
 
 1. ライブラリの「コメント弾幕」をタイムラインに追加します。オブジェクトは画面全体に描画されます。
@@ -102,6 +108,8 @@
 
 ## 開発
 
+表示用の文字列は `src/Beutl.Extensions.Danmaku/Properties/Strings.resx`（英語）と `Strings.ja.resx`、`Strings.zh-CN.resx`、`Strings.ko-KR.resx`、`Strings.es.resx` で管理します。新しい言語は同じキーを持つ `Strings.<言語コード>.resx` を追加してください。`{0}` などの書式引数は翻訳先でも保持します。文字列のC#クラスと翻訳リソースのDLLはビルド時に自動生成されます。
+
 `Beutl.Extensibility.Sdk` 2.0.0-preview.13 と .NET 11 SDK でビルドします。
 
 ```bash
@@ -112,7 +120,7 @@ dotnet build src/Beutl.Extensions.Danmaku
 dotnet test tests/Beutl.Extensions.Danmaku.Tests
 ```
 
-テストには、パーサーとレイアウトの単体テスト、Beutlの `SceneRenderer` でシーンをヘッドレスに描画して画素を確認するテスト、Avaloniaのヘッドレス環境でツールタブを操作するテストがあります。描画した画像は `bin/Debug/net11.0/rendered/` に保存されます。ダウンロードのテストは偽のHTTP応答と偽の yt-dlp で動き、ネットワークを使いません。
+テストには、パーサーとレイアウトの単体テスト、Beutlの `SceneRenderer` でシーンをヘッドレスに描画して画素を確認するテスト、Avaloniaのヘッドレス環境でツールタブを操作するテストがあります。UIテストはBeutl本体と同じ `FluentAvaloniaTheme` と `Beutl.Controls/Styles.axaml` を読み込み、本体の対応言語一覧を使って5言語とダーク・ライトテーマで描画します。描画した画像は `bin/Debug/net11.0/rendered/` に保存されます。ダウンロードのテストは偽のHTTP応答と偽の yt-dlp で動き、ネットワークを使いません。
 
 実際のサイトから取得するテストは、URLを環境変数で渡したときだけ動きます。
 

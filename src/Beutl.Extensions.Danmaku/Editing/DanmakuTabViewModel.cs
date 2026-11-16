@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Collections.ObjectModel;
 using System.Text.Json.Nodes;
 using Avalonia.Threading;
@@ -9,13 +8,14 @@ using Beutl.Extensibility;
 using Beutl.Extensions.Danmaku.Comments;
 using Beutl.Extensions.Danmaku.Download;
 using Beutl.Extensions.Danmaku.Graphics;
+using Beutl.Extensions.Danmaku.Properties;
 using Beutl.ProjectSystem;
 using Reactive.Bindings;
 
 namespace Beutl.Extensions.Danmaku.Editing;
 
 /// <summary>
-/// The "コメント弾幕" tool tab: lists the comments of one danmaku object for editing, and imports, downloads or
+/// The Danmaku tool tab: lists the comments of one danmaku object for editing, and imports, downloads or
 /// exports them. The tab edits the object whose "編集" button opened it, not whatever the timeline selects.
 /// Every change is one undoable edit of the object's comment list.
 /// </summary>
@@ -25,10 +25,6 @@ public sealed class DanmakuTabViewModel : IToolContext
 
     private readonly IServiceProvider _services;
     private readonly DownloadFunc _download;
-    private const string NoTargetMessage = "「編集」から開いてください";
-
-    private const string MissingTargetMessage = "要素が削除されました";
-
     private readonly IEditorSelection? _selection;
     private readonly IEditorClock? _clock;
     private readonly HistoryManager? _history;
@@ -53,15 +49,15 @@ public sealed class DanmakuTabViewModel : IToolContext
         Filter.Subscribe(_ => ApplyFilter());
     }
 
-    public static IReadOnlyList<string> PositionNames { get; } = ["流れる", "上", "下"];
+    public static IReadOnlyList<string> PositionNames => [Strings.PositionScroll, Strings.PositionTop, Strings.PositionBottom];
 
-    public static IReadOnlyList<string> SizeNames { get; } = ["普通", "大", "小"];
+    public static IReadOnlyList<string> SizeNames => [Strings.SizeMedium, Strings.SizeBig, Strings.SizeSmall];
 
     public ToolTabExtension Extension { get; }
 
     public IReactiveProperty<bool> IsSelected { get; } = new ReactivePropertySlim<bool>();
 
-    public IReadOnlyReactiveProperty<string> Header { get; } = new ReactivePropertySlim<string>("コメント弾幕");
+    public IReadOnlyReactiveProperty<string> Header { get; } = new ReactivePropertySlim<string>(Strings.Danmaku);
 
     /// <summary>Whether the tab shows the import page instead of the editor.</summary>
     public ReactivePropertySlim<bool> IsImportPageOpen { get; } = new();
@@ -73,7 +69,7 @@ public sealed class DanmakuTabViewModel : IToolContext
     public ObservableCollection<ImportJobViewModel> ImportJobs { get; } = [];
 
     /// <summary>Why nothing is being edited, or null while <see cref="Target"/> is set.</summary>
-    public ReactivePropertySlim<string?> TargetMessage { get; } = new(NoTargetMessage);
+    public ReactivePropertySlim<string?> TargetMessage { get; } = new(Strings.OpenFromEdit);
 
     /// <summary>Which element is being edited, for the header.</summary>
     public ReactivePropertySlim<string> TargetDescription { get; } = new("");
@@ -163,8 +159,8 @@ public sealed class DanmakuTabViewModel : IToolContext
         if (time < TimeSpan.Zero)
             time = TimeSpan.Zero;
 
-        var comment = new DanmakuComment(time, "コメント");
-        Commit(drawable.Comments.Value.Add(comment), "コメントを追加");
+        var comment = new DanmakuComment(time, Strings.NewComment);
+        Commit(drawable.Comments.Value.Add(comment), Strings.AddComment);
 
         RequestFocus(comment);
     }
@@ -193,25 +189,25 @@ public sealed class DanmakuTabViewModel : IToolContext
 
         int[] indices = rows.Select(r => r.Index).ToArray();
         if (indices.Length > 0)
-            Commit(drawable.Comments.Value.RemoveAt(indices), "コメントを削除");
+            Commit(drawable.Comments.Value.RemoveAt(indices), Strings.DeleteComment);
     }
 
     public void ClearAll()
     {
         if (Target.Value is { } drawable && drawable.Comments.Value.Count > 0)
-            Commit(DanmakuCommentList.Empty, "コメントをすべて削除");
+            Commit(DanmakuCommentList.Empty, Strings.DeleteAllComments);
     }
 
     public void ImportFile(string path)
     {
         if (Target.Value == null)
         {
-            Status.Value = "編集する対象がありません";
+            Status.Value = Strings.NoTarget;
             return;
         }
 
         ImportNotice.Value = null;
-        var job = new ImportJobViewModel(Path.GetFileName(path), "ファイル", "読み込み中…");
+        var job = new ImportJobViewModel(Path.GetFileName(path), Strings.File, Strings.Reading);
         ImportJobs.Insert(0, job);
 
         List<DanmakuComment> comments;
@@ -222,17 +218,17 @@ public sealed class DanmakuTabViewModel : IToolContext
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Xml.XmlException
                                        or System.Text.Json.JsonException)
         {
-            Fail(job, $"読み込めませんでした: {ex.Message}");
+            Fail(job, string.Format(Strings.ReadFailed, ex.Message));
             return;
         }
 
         if (comments.Count == 0)
         {
-            Fail(job, "コメントが見つかりませんでした");
+            Fail(job, Strings.NoCommentsFound);
             return;
         }
 
-        ApplyImported(comments, "コメントを取り込み");
+        ApplyImported(comments, Strings.ImportCommentsHistory);
         Succeed(job, comments.Count);
     }
 
@@ -244,11 +240,11 @@ public sealed class DanmakuTabViewModel : IToolContext
         try
         {
             CommentFile.Write(path, drawable.Comments.Value.Items);
-            Status.Value = $"{drawable.Comments.Value.Count:N0} 件を書き出しました";
+            Status.Value = string.Format(Strings.ExportSucceeded, drawable.Comments.Value.Count);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Status.Value = $"書き出せませんでした: {ex.Message}";
+            Status.Value = string.Format(Strings.ExportFailed, ex.Message);
         }
     }
 
@@ -259,14 +255,14 @@ public sealed class DanmakuTabViewModel : IToolContext
             return;
         if (Target.Value is not { } target)
         {
-            Status.Value = "編集する対象がありません";
+            Status.Value = Strings.NoTarget;
             return;
         }
 
         string url = Url.Value.Trim();
         if (CommentSourceDetector.Detect(url) is not { } source)
         {
-            Status.Value = ImportNotice.Value = "対応していない URL です";
+            Status.Value = ImportNotice.Value = Strings.UnsupportedUrl;
             return;
         }
 
@@ -274,7 +270,7 @@ public sealed class DanmakuTabViewModel : IToolContext
         _downloadCancellation = new CancellationTokenSource();
         IsDownloading.Value = true;
         Status.Value = null;
-        var job = new ImportJobViewModel(url, source.SiteName, "取得中…", CancelDownload);
+        var job = new ImportJobViewModel(url, source.SiteName, Strings.Downloading, CancelDownload);
         ImportJobs.Insert(0, job);
         try
         {
@@ -282,23 +278,23 @@ public sealed class DanmakuTabViewModel : IToolContext
             List<DanmakuComment> comments = await _download(url, progress, _downloadCancellation.Token);
             if (comments.Count == 0)
             {
-                Fail(job, "コメントがありませんでした");
+                Fail(job, Strings.NoDownloadedComments);
                 return;
             }
 
             if (!ReferenceEquals(Target.Value, target))
             {
-                Fail(job, "対象が変わったため反映していません");
+                Fail(job, Strings.TargetChanged);
                 return;
             }
 
-            ApplyImported(comments, "コメントをダウンロード");
+            ApplyImported(comments, Strings.DownloadComments);
             Succeed(job, comments.Count);
         }
         catch (OperationCanceledException)
         {
-            job.Finish(ImportJobState.Canceled, "中止しました");
-            Status.Value = "中止しました";
+            job.Finish(ImportJobState.Canceled, Strings.DownloadCanceled);
+            Status.Value = Strings.DownloadCanceled;
         }
         catch (CommentDownloadException ex)
         {
@@ -306,7 +302,7 @@ public sealed class DanmakuTabViewModel : IToolContext
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or System.ComponentModel.Win32Exception)
         {
-            Fail(job, $"取得できませんでした: {ex.Message}");
+            Fail(job, string.Format(Strings.DownloadFailed, ex.Message));
         }
         finally
         {
@@ -324,7 +320,7 @@ public sealed class DanmakuTabViewModel : IToolContext
     // The result goes to the history entry, and to the status line the editor shows.
     private void Succeed(ImportJobViewModel job, int count)
     {
-        string message = string.Create(CultureInfo.InvariantCulture, $"{count:N0} 件を{(ReplaceOnImport.Value ? "取り込みました" : "追加しました")}");
+        string message = string.Format(ReplaceOnImport.Value ? Strings.ImportSucceeded : Strings.AppendSucceeded, count);
         job.Finish(ImportJobState.Succeeded, message);
         Status.Value = message;
     }
@@ -346,14 +342,14 @@ public sealed class DanmakuTabViewModel : IToolContext
 
         if (row.TryBuild() is not { } comment)
         {
-            Status.Value = "読み取れない値を元に戻しました";
+            Status.Value = Strings.InvalidValueReverted;
             row.Load(row.Index, list[row.Index]);
             return;
         }
 
         if (comment != list[row.Index])
         {
-            Commit(list.Replace(row.Index, comment), "コメントを編集");
+            Commit(list.Replace(row.Index, comment), Strings.EditComment);
             // A time edit can move the comment to another row; let the view follow it.
             RequestFocus(comment);
         }
@@ -404,7 +400,7 @@ public sealed class DanmakuTabViewModel : IToolContext
                        && _scene.Children.Contains(_boundElement)
                        && ReferenceEquals(_bound.FindHierarchicalParent<Element>(), _boundElement);
         ApplyTarget(present ? _bound : null, present ? _boundElement : null);
-        TargetMessage.Value = present ? null : _bound == null ? NoTargetMessage : MissingTargetMessage;
+        TargetMessage.Value = present ? null : _bound == null ? Strings.OpenFromEdit : Strings.ElementDeleted;
         if (!present)
             IsImportPageOpen.Value = false;
     }
@@ -426,8 +422,8 @@ public sealed class DanmakuTabViewModel : IToolContext
         }
 
         TargetDescription.Value = element == null ? ""
-            : !string.IsNullOrWhiteSpace(element.Name.Value) ? $"要素「{element.Name.Value}」"
-            : $"{CommentWriter.FormatTime(element.Start.Value.ToTimeSpan())} から始まる要素";
+            : !string.IsNullOrWhiteSpace(element.Name.Value) ? string.Format(Strings.NamedElement, element.Name.Value)
+            : string.Format(Strings.ElementAtTime, CommentWriter.FormatTime(element.Start.Value.ToTimeSpan()));
     }
 
     private void OnCommentsChanged(object? sender, PropertyValueChangedEventArgs<DanmakuCommentList> e)
@@ -477,11 +473,12 @@ public sealed class DanmakuTabViewModel : IToolContext
 
         Summary.Value = Target.Value == null
             ? ""
-            : filter.Length == 0 ? $"{_allRows.Count} 件" : $"{visible.Count} / {_allRows.Count} 件";
+            : filter.Length == 0 ? string.Format(Strings.CommentCount, _allRows.Count)
+            : string.Format(Strings.FilteredCommentCount, visible.Count, _allRows.Count);
         TotalCount.Value = _allRows.Count;
         EmptyMessage.Value = Target.Value == null || visible.Count > 0 ? null
-            : _allRows.Count == 0 ? "コメントがありません"
-            : "一致するコメントはありません";
+            : _allRows.Count == 0 ? Strings.NoComments
+            : Strings.NoMatchingComments;
     }
 
     public void WriteToJson(JsonObject json)

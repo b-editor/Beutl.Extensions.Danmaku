@@ -1,5 +1,6 @@
 using Beutl.Extensibility;
 using Beutl.Extensions.Danmaku.Graphics;
+using Beutl.Extensions.Danmaku.Properties;
 using Beutl.Services;
 
 namespace Beutl.Extensions.Danmaku;
@@ -9,13 +10,13 @@ public sealed class DanmakuExtension : Extension
 {
     public override string Name => "Danmaku";
 
-    public override string DisplayName => "コメント弾幕";
+    public override string DisplayName => Strings.Danmaku;
 
     public override void Load()
     {
         base.Load();
-        LibraryService.Current.RegisterGroup("コメント弾幕", g => g
+        LibraryService.Current.RegisterGroup(Strings.Danmaku, g => g
             // BindDrawable also binds the EngineObject format, which the timeline requires to accept a drop.
-            .AddMultiple("コメント弾幕", "取り込んだコメントやダウンロードしたコメントを画面に流します", m => m.BindDrawable<DanmakuDrawable>()));
+            .AddMultiple(Strings.Danmaku, Strings.DanmakuDescription, m => m.BindDrawable<DanmakuDrawable>()));
     }
 }

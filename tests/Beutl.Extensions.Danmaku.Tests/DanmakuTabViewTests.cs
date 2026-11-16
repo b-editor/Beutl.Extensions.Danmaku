@@ -1,19 +1,24 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Beutl.Extensibility;
 using Beutl.Extensions.Danmaku.Comments;
 using Beutl.Extensions.Danmaku.Editing;
 using Beutl.Extensions.Danmaku.Graphics;
+using Beutl.Extensions.Danmaku.Properties;
 using Beutl.PropertyAdapters;
+using LocalizeService = Beutl.Language.LocalizeService;
 
 namespace Beutl.Extensions.Danmaku.Tests;
 
 // Drives the tool tab view and the property panel's summary in a headless Avalonia session.
+[SetUICulture("ja-JP")]
 public class DanmakuTabViewTests
 {
     private static Window Show(Control content)
@@ -95,6 +100,17 @@ public class DanmakuTabViewTests
     {
         window.KeyPress(key, modifiers, key == Key.Enter ? PhysicalKey.Enter : PhysicalKey.Delete, null);
         Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void SaveScreenshot(Window window, string name)
+    {
+        string directory = Path.Combine(TestContext.CurrentContext.WorkDirectory, "rendered");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, name);
+        using var frame = window.CaptureRenderedFrame();
+        Assert.That(frame, Is.Not.Null);
+        frame!.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+        TestContext.AddTestAttachment(path);
     }
 
     [AvaloniaTest]
@@ -402,14 +418,34 @@ public class DanmakuTabViewTests
         Assert.That(DetailPane(view), Has.Length.EqualTo(1));
     }
 
-    [AvaloniaTest]
-    [TestCase(1200, true)]
-    [TestCase(500, false)]
-    public void TheEditorSitsBesideTheListWhenThereIsRoom(double width, bool beside)
+    private static IEnumerable<TestCaseData> EditorLayouts()
     {
+        foreach (CultureInfo culture in LocalizeService.Instance.SupportedCultures())
+        foreach (string theme in new[] { "Dark", "Light" })
+        foreach ((double width, bool beside) in new[] { (1200d, true), (500d, false) })
+            yield return new TestCaseData(width, beside, culture.Name, theme);
+    }
+
+    private static IEnumerable<TestCaseData> HostLanguageThemes()
+    {
+        foreach (CultureInfo culture in LocalizeService.Instance.SupportedCultures())
+        foreach (string theme in new[] { "Dark", "Light" })
+            yield return new TestCaseData(culture.Name, theme);
+    }
+
+    [AvaloniaTest]
+    [TestCaseSource(nameof(EditorLayouts))]
+    public void TheEditorSitsBesideTheListWhenThereIsRoom(double width, bool beside, string uiCulture, string theme)
+    {
+        using var culture = new CultureScope(uiCulture);
         using var f = new EditorFixture();
         (Window window, DanmakuTabView view) = Open(f, width: width);
+        window.RequestedThemeVariant = theme == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        Dispatcher.UIThread.RunJobs();
         Select(view, f.ViewModel.Rows[0]);
+
+        // A missing host theme used to silently fall back to Avalonia's generic button theme.
+        Assert.That(view.FindResource("ToolTabBarIconButtonTheme"), Is.TypeOf<ControlTheme>());
 
         ListBox list = List(view);
         ScrollViewer title = DetailPane(view).Single();
@@ -421,13 +457,66 @@ public class DanmakuTabViewTests
         else
             Assert.That(titleOrigin.Y, Is.GreaterThan(listOrigin.Y + list.Bounds.Height));
 
-        string directory = System.IO.Path.Combine(TestContext.CurrentContext.WorkDirectory, "rendered");
-        System.IO.Directory.CreateDirectory(directory);
-        string path = System.IO.Path.Combine(directory, $"danmaku-tab-{width}.png");
-        using var frame = window.CaptureRenderedFrame();
-        Assert.That(frame, Is.Not.Null);
-        frame!.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
-        TestContext.AddTestAttachment(path);
+        SaveScreenshot(window, $"danmaku-tab-{uiCulture}-{theme}-{width}.png");
+    }
+
+    [AvaloniaTest]
+    [TestCaseSource(nameof(HostLanguageThemes))]
+    public void EditorImportsAndEditsCommentsInEveryHostLanguage(string uiCulture, string theme)
+    {
+        using var culture = new CultureScope(uiCulture);
+        using var f = new EditorFixture();
+        (Window window, DanmakuTabView view) = Open(f, width: 500);
+        window.RequestedThemeVariant = theme == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        Dispatcher.UIThread.RunJobs();
+        Select(view, f.ViewModel.Rows[1]);
+
+        Assert.That(Find<TextBlock>(view).Select(t => t.Text), Is.SupersetOf(new[]
+        {
+            Strings.Danmaku, string.Format(Strings.CommentCount, 3), Strings.Time, Strings.Position, Strings.Size, Strings.Color, Strings.Text,
+        }));
+        Assert.That(Choice(view, Strings.PositionScroll).SelectedItem, Is.EqualTo(Strings.PositionScroll));
+        Assert.That(Choice(view, Strings.SizeMedium).SelectedItem, Is.EqualTo(Strings.SizeMedium));
+        Assert.That(ByTip(view, Strings.ColorRed), Is.Not.Null);
+        Assert.That(ToolTip.GetTip(ByTip(view, Strings.SelectInTimeline)),
+            Is.EqualTo(string.Format(Strings.SelectTargetInTimeline, string.Format(Strings.ElementAtTime, "0:01.000"))));
+
+        TextBox editor = Editor(view, "赤いコメント");
+        editor.Focus();
+        editor.Text = "Edited comment";
+        Press(window, Key.Enter);
+        Assert.That(f.Texts, Does.Contain("Edited comment"));
+
+        Click(ByTip(view, Strings.ImportComments));
+        Assert.That(Find<TextBlock>(view).Select(t => t.Text), Is.SupersetOf(new[] { Strings.ImportComments, "URL", Strings.File, Strings.ExistingComments }));
+        Assert.That(Choice(view, Strings.Replace).SelectedItem, Is.EqualTo(Strings.Replace));
+
+        string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"localized-{Guid.NewGuid():N}.txt");
+        try
+        {
+            File.WriteAllText(path, "1.25\tue big red\t取り込み\n2.5\tshita small\tImported");
+            f.ViewModel.ImportFile(path);
+            Dispatcher.UIThread.RunJobs();
+            Assert.That(Find<TextBlock>(view).Select(t => t.Text),
+                Is.SupersetOf(new[] { Strings.History, Strings.StateCompleted, string.Format(Strings.ImportSucceeded, 2) }));
+
+            f.ViewModel.Url.Value = "https://example.com/video";
+            f.ViewModel.DownloadAsync().GetAwaiter().GetResult();
+            Dispatcher.UIThread.RunJobs();
+            Assert.That(Find<TextBlock>(view).Select(t => t.Text), Does.Contain(Strings.UnsupportedUrl));
+
+            SaveScreenshot(window, $"danmaku-import-{uiCulture}-{theme}.png");
+
+            Click(ByTip(view, Strings.BackShortcut));
+            Assert.That(f.ViewModel.Rows.Select(r => r.PositionName), Is.EqualTo(new[] { Strings.PositionTop, Strings.PositionBottom }));
+            Assert.That(f.ViewModel.Rows.Select(r => r.SizeName), Is.EqualTo(new[] { Strings.SizeBig, Strings.SizeSmall }));
+            Assert.That(f.Texts, Is.EqualTo(new[] { "取り込み", "Imported" }));
+        }
+        finally
+        {
+            File.Delete(path);
+            window.Close();
+        }
     }
 
     private static (IPropertyEditorContext Context, Control Control) CreateCommentEditor(DanmakuDrawable drawable, IServiceProvider? services)
@@ -458,22 +547,25 @@ public class DanmakuTabViewTests
     }
 
     [AvaloniaTest]
-    public void PropertyPanelShowsTheCommentCount()
+    [TestCase("ja-JP", "コメント", "2 件", "3 件")]
+    [TestCase("en-US", "Comments", "Comments: 2", "Comments: 3")]
+    public void PropertyPanelShowsTheCommentCount(string uiCulture, string label, string count, string updatedCount)
     {
+        using var culture = new CultureScope(uiCulture);
         var drawable = new DanmakuDrawable();
         drawable.Comments.Value = new DanmakuCommentList(CommentParser.Parse("1\t\ta\n2\t\tb"));
         (_, Control control) = CreateCommentEditor(drawable, null);
         Show(control);
 
         string?[] texts = Find<TextBlock>(control).Select(t => t.Text).ToArray();
-        Assert.That(texts, Does.Contain("コメント"));
-        Assert.That(texts, Does.Contain("2 件"));
+        Assert.That(texts, Does.Contain(label));
+        Assert.That(texts, Does.Contain(count));
         // Without an editor (the settings page, the node graph) there is no tab to open.
         Assert.That(Find<Button>(control).Single().IsEnabled, Is.False);
 
         drawable.Comments.Value = drawable.Comments.Value.Add(new DanmakuComment(TimeSpan.Zero, "c"));
         Dispatcher.UIThread.RunJobs();
-        Assert.That(Find<TextBlock>(control).Select(t => t.Text), Does.Contain("3 件"));
+        Assert.That(Find<TextBlock>(control).Select(t => t.Text), Does.Contain(updatedCount));
     }
 
     [AvaloniaTest]

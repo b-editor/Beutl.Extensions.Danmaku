@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Beutl.Extensions.Danmaku.Comments;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Editing;
 
@@ -66,9 +67,19 @@ public sealed class CommentRowViewModel : INotifyPropertyChanged
 
     // Read-only views of the stored comment for the list.
 
-    public string PositionName => DanmakuTabViewModel.PositionNames[(int)Comment.Position];
+    public string PositionName => Comment.Position switch
+    {
+        CommentPosition.Top => Strings.PositionTop,
+        CommentPosition.Bottom => Strings.PositionBottom,
+        _ => Strings.PositionScroll,
+    };
 
-    public string SizeName => DanmakuTabViewModel.SizeNames[(int)Comment.Size];
+    public string SizeName => Comment.Size switch
+    {
+        CommentSize.Big => Strings.SizeBig,
+        CommentSize.Small => Strings.SizeSmall,
+        _ => Strings.SizeMedium,
+    };
 
     public Avalonia.Media.Color SwatchColor
     {

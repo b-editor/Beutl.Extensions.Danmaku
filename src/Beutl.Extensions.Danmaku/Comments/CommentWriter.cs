@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Comments;
 
@@ -9,7 +10,7 @@ public static class CommentWriter
     public static string ToText(IEnumerable<DanmakuComment> comments)
     {
         var sb = new StringBuilder();
-        sb.Append("# 時刻\tコマンド\t本文\n");
+        sb.Append(Strings.ExportHeader);
         foreach (DanmakuComment comment in comments)
         {
             string text = comment.Text.Replace("\t", " ").Replace("\r\n", "\n").Replace("\n", "\\n");
