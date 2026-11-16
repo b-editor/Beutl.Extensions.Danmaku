@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -10,7 +11,9 @@ using Beutl.Extensibility;
 using Beutl.Extensions.Danmaku.Comments;
 using Beutl.Extensions.Danmaku.Editing;
 using Beutl.Extensions.Danmaku.Graphics;
+using Beutl.Extensions.Danmaku.Properties;
 using Beutl.PropertyAdapters;
+using LocalizeService = Beutl.Language.LocalizeService;
 
 namespace Beutl.Extensions.Danmaku.Tests;
 
@@ -97,6 +100,17 @@ public class DanmakuTabViewTests
     {
         window.KeyPress(key, modifiers, key == Key.Enter ? PhysicalKey.Enter : PhysicalKey.Delete, null);
         Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void SaveScreenshot(Window window, string name)
+    {
+        string directory = Path.Combine(TestContext.CurrentContext.WorkDirectory, "rendered");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, name);
+        using var frame = window.CaptureRenderedFrame();
+        Assert.That(frame, Is.Not.Null);
+        frame!.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+        TestContext.AddTestAttachment(path);
     }
 
     [AvaloniaTest]
@@ -404,15 +418,23 @@ public class DanmakuTabViewTests
         Assert.That(DetailPane(view), Has.Length.EqualTo(1));
     }
 
+    private static IEnumerable<TestCaseData> EditorLayouts()
+    {
+        foreach (CultureInfo culture in LocalizeService.Instance.SupportedCultures())
+        foreach (string theme in new[] { "Dark", "Light" })
+        foreach ((double width, bool beside) in new[] { (1200d, true), (500d, false) })
+            yield return new TestCaseData(width, beside, culture.Name, theme);
+    }
+
+    private static IEnumerable<TestCaseData> HostLanguageThemes()
+    {
+        foreach (CultureInfo culture in LocalizeService.Instance.SupportedCultures())
+        foreach (string theme in new[] { "Dark", "Light" })
+            yield return new TestCaseData(culture.Name, theme);
+    }
+
     [AvaloniaTest]
-    [TestCase(1200, true, "ja-JP", "Dark")]
-    [TestCase(500, false, "ja-JP", "Dark")]
-    [TestCase(1200, true, "en-US", "Dark")]
-    [TestCase(500, false, "en-US", "Dark")]
-    [TestCase(1200, true, "ja-JP", "Light")]
-    [TestCase(500, false, "ja-JP", "Light")]
-    [TestCase(1200, true, "en-US", "Light")]
-    [TestCase(500, false, "en-US", "Light")]
+    [TestCaseSource(nameof(EditorLayouts))]
     public void TheEditorSitsBesideTheListWhenThereIsRoom(double width, bool beside, string uiCulture, string theme)
     {
         using var culture = new CultureScope(uiCulture);
@@ -435,32 +457,29 @@ public class DanmakuTabViewTests
         else
             Assert.That(titleOrigin.Y, Is.GreaterThan(listOrigin.Y + list.Bounds.Height));
 
-        string directory = System.IO.Path.Combine(TestContext.CurrentContext.WorkDirectory, "rendered");
-        System.IO.Directory.CreateDirectory(directory);
-        string path = System.IO.Path.Combine(directory, $"danmaku-tab-{uiCulture}-{theme}-{width}.png");
-        using var frame = window.CaptureRenderedFrame();
-        Assert.That(frame, Is.Not.Null);
-        frame!.Save(path, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
-        TestContext.AddTestAttachment(path);
+        SaveScreenshot(window, $"danmaku-tab-{uiCulture}-{theme}-{width}.png");
     }
 
     [AvaloniaTest]
-    [TestCase("Dark")]
-    [TestCase("Light")]
-    public void EnglishEditorImportsAndEditsComments(string theme)
+    [TestCaseSource(nameof(HostLanguageThemes))]
+    public void EditorImportsAndEditsCommentsInEveryHostLanguage(string uiCulture, string theme)
     {
-        using var culture = new CultureScope("en-US");
+        using var culture = new CultureScope(uiCulture);
         using var f = new EditorFixture();
-        (Window window, DanmakuTabView view) = Open(f);
+        (Window window, DanmakuTabView view) = Open(f, width: 500);
         window.RequestedThemeVariant = theme == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
         Dispatcher.UIThread.RunJobs();
         Select(view, f.ViewModel.Rows[1]);
 
-        Assert.That(Find<TextBlock>(view).Select(t => t.Text), Is.SupersetOf(new[] { "Danmaku", "Comments: 3", "Time", "Position", "Size", "Color", "Text" }));
-        Assert.That(Choice(view, "Scrolling").SelectedItem, Is.EqualTo("Scrolling"));
-        Assert.That(Choice(view, "Medium").SelectedItem, Is.EqualTo("Medium"));
-        Assert.That(ByTip(view, "Red"), Is.Not.Null);
-        Assert.That(ToolTip.GetTip(ByTip(view, "Select in timeline")), Is.EqualTo("Select in timeline (Element starting at 0:01.000)"));
+        Assert.That(Find<TextBlock>(view).Select(t => t.Text), Is.SupersetOf(new[]
+        {
+            Strings.Danmaku, string.Format(Strings.CommentCount, 3), Strings.Time, Strings.Position, Strings.Size, Strings.Color, Strings.Text,
+        }));
+        Assert.That(Choice(view, Strings.PositionScroll).SelectedItem, Is.EqualTo(Strings.PositionScroll));
+        Assert.That(Choice(view, Strings.SizeMedium).SelectedItem, Is.EqualTo(Strings.SizeMedium));
+        Assert.That(ByTip(view, Strings.ColorRed), Is.Not.Null);
+        Assert.That(ToolTip.GetTip(ByTip(view, Strings.SelectInTimeline)),
+            Is.EqualTo(string.Format(Strings.SelectTargetInTimeline, string.Format(Strings.ElementAtTime, "0:01.000"))));
 
         TextBox editor = Editor(view, "赤いコメント");
         editor.Focus();
@@ -468,9 +487,9 @@ public class DanmakuTabViewTests
         Press(window, Key.Enter);
         Assert.That(f.Texts, Does.Contain("Edited comment"));
 
-        Click(ByTip(view, "Import comments"));
-        Assert.That(Find<TextBlock>(view).Select(t => t.Text), Is.SupersetOf(new[] { "Import comments", "URL", "File", "Existing comments" }));
-        Assert.That(Choice(view, "Replace").SelectedItem, Is.EqualTo("Replace"));
+        Click(ByTip(view, Strings.ImportComments));
+        Assert.That(Find<TextBlock>(view).Select(t => t.Text), Is.SupersetOf(new[] { Strings.ImportComments, "URL", Strings.File, Strings.ExistingComments }));
+        Assert.That(Choice(view, Strings.Replace).SelectedItem, Is.EqualTo(Strings.Replace));
 
         string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"localized-{Guid.NewGuid():N}.txt");
         try
@@ -478,24 +497,19 @@ public class DanmakuTabViewTests
             File.WriteAllText(path, "1.25\tue big red\t取り込み\n2.5\tshita small\tImported");
             f.ViewModel.ImportFile(path);
             Dispatcher.UIThread.RunJobs();
-            Assert.That(Find<TextBlock>(view).Select(t => t.Text), Is.SupersetOf(new[] { "History", "Completed", "Comments imported: 2" }));
+            Assert.That(Find<TextBlock>(view).Select(t => t.Text),
+                Is.SupersetOf(new[] { Strings.History, Strings.StateCompleted, string.Format(Strings.ImportSucceeded, 2) }));
 
             f.ViewModel.Url.Value = "https://example.com/video";
             f.ViewModel.DownloadAsync().GetAwaiter().GetResult();
             Dispatcher.UIThread.RunJobs();
-            Assert.That(Find<TextBlock>(view).Select(t => t.Text), Does.Contain("This URL is not supported."));
+            Assert.That(Find<TextBlock>(view).Select(t => t.Text), Does.Contain(Strings.UnsupportedUrl));
 
-            string directory = Path.Combine(TestContext.CurrentContext.WorkDirectory, "rendered");
-            Directory.CreateDirectory(directory);
-            string imagePath = Path.Combine(directory, $"danmaku-import-en-US-{theme}.png");
-            using var frame = window.CaptureRenderedFrame();
-            Assert.That(frame, Is.Not.Null);
-            frame!.Save(imagePath, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
-            TestContext.AddTestAttachment(imagePath);
+            SaveScreenshot(window, $"danmaku-import-{uiCulture}-{theme}.png");
 
-            Click(ByTip(view, "Back"));
-            Assert.That(f.ViewModel.Rows.Select(r => r.PositionName), Is.EqualTo(new[] { "Top", "Bottom" }));
-            Assert.That(f.ViewModel.Rows.Select(r => r.SizeName), Is.EqualTo(new[] { "Large", "Small" }));
+            Click(ByTip(view, Strings.BackShortcut));
+            Assert.That(f.ViewModel.Rows.Select(r => r.PositionName), Is.EqualTo(new[] { Strings.PositionTop, Strings.PositionBottom }));
+            Assert.That(f.ViewModel.Rows.Select(r => r.SizeName), Is.EqualTo(new[] { Strings.SizeBig, Strings.SizeSmall }));
             Assert.That(f.Texts, Is.EqualTo(new[] { "取り込み", "Imported" }));
         }
         finally

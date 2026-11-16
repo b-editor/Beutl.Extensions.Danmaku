@@ -10,19 +10,23 @@ using Beutl.Extensions.Danmaku.Editing;
 using Beutl.Extensions.Danmaku.Graphics;
 using Beutl.Extensions.Danmaku.Properties;
 using Beutl.PropertyAdapters;
+using LocalizeService = Beutl.Language.LocalizeService;
 
 namespace Beutl.Extensions.Danmaku.Tests;
 
 public class LocalizationTests
 {
-    [Test]
-    public void TranslationsCoverEveryResourceAndPreserveFormatArguments()
+    private static IEnumerable<CultureInfo> TranslatedCultures => LocalizeService.Instance.SupportedCultures()
+        .Where(culture => culture.TwoLetterISOLanguageName != "en");
+
+    [TestCaseSource(nameof(TranslatedCultures))]
+    public void TranslationsCoverEveryResourceAndPreserveFormatArguments(CultureInfo culture)
     {
         ResourceSet english = Strings.ResourceManager.GetResourceSet(CultureInfo.InvariantCulture, true, false)!;
-        ResourceSet japanese = Strings.ResourceManager.GetResourceSet(CultureInfo.GetCultureInfo("ja"), true, false)!;
-        Assert.That(japanese, Is.Not.Null, "Japanese must be a satellite resource, not the English fallback.");
+        ResourceSet translation = Strings.ResourceManager.GetResourceSet(culture, true, true)!;
+        Assert.That(translation, Is.Not.Null.And.Not.SameAs(english), "Each host language must have its own satellite resources.");
         var source = english.Cast<DictionaryEntry>().ToDictionary(e => (string)e.Key, e => (string)e.Value!);
-        var translated = japanese.Cast<DictionaryEntry>().ToDictionary(e => (string)e.Key, e => (string)e.Value!);
+        var translated = translation.Cast<DictionaryEntry>().ToDictionary(e => (string)e.Key, e => (string)e.Value!);
         Assert.That(translated.Keys, Is.EquivalentTo(source.Keys));
 
         foreach ((string key, string value) in source)
@@ -47,6 +51,11 @@ public class LocalizationTests
                  {
                      ("ja-JP", "コメント弾幕", "コメント", "流れる", "白"),
                      ("en-US", "Danmaku", "Comments", "Scrolling", "White"),
+                     ("zh-CN", "弹幕", "评论", "滚动", "白色"),
+                     ("ko-KR", "댓글 탄막", "댓글", "흐름", "흰색"),
+                     ("es", "Danmaku", "Comentarios", "Deslizante", "Blanco"),
+                     ("es-ES", "Danmaku", "Comentarios", "Deslizante", "Blanco"),
+                     ("es-MX", "Danmaku", "Comentarios", "Deslizante", "Blanco"),
                      ("fr-FR", "Danmaku", "Comments", "Scrolling", "White"),
                      ("ja", "コメント弾幕", "コメント", "流れる", "白"),
                  })
@@ -71,6 +80,9 @@ public class LocalizationTests
 
     [TestCase("ja-JP", "対応していない URL です", "yt-dlp が見つかりません")]
     [TestCase("en-US", "This URL is not supported.", "yt-dlp was not found.")]
+    [TestCase("zh-CN", "不支持此 URL。", "未找到 yt-dlp。")]
+    [TestCase("ko-KR", "지원하지 않는 URL입니다.", "yt-dlp를 찾을 수 없습니다.")]
+    [TestCase("es", "Esta URL no es compatible.", "No se encontró yt-dlp.")]
     public async Task DownloaderErrorsUseTheUiLanguage(string uiCulture, string unsupportedUrl, string missingTool)
     {
         using var culture = new CultureScope(uiCulture);
@@ -96,10 +108,10 @@ public class LocalizationTests
         [
             new(TimeSpan.FromSeconds(62.5), "日本語 and English", CommentPosition.Top, CommentSize.Big, Beutl.Media.Colors.Red),
         ];
-        foreach (string uiCulture in new[] { "en-US", "ja-JP" })
+        foreach (CultureInfo uiCulture in LocalizeService.Instance.SupportedCultures())
         {
             // Display language and number formatting can differ in Beutl; file syntax must not follow either.
-            using var culture = new CultureScope(uiCulture, "fr-FR");
+            using var culture = new CultureScope(uiCulture.Name, "fr-FR");
             string text = CommentWriter.ToText(comments);
             Assert.That(text, Does.StartWith(Strings.ExportHeader));
             Assert.That(text, Does.Contain("1:02.500\tue big #FF0000\t日本語 and English"));
