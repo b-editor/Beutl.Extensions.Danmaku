@@ -3,6 +3,7 @@ using Beutl.Composition;
 using Beutl.Engine;
 using Beutl.Extensions.Danmaku.Comments;
 using Beutl.Extensions.Danmaku.Layout;
+using Beutl.Extensions.Danmaku.Properties;
 using Beutl.Graphics;
 using Beutl.Graphics.Rendering;
 using Beutl.Media;
@@ -15,7 +16,7 @@ namespace Beutl.Extensions.Danmaku.Graphics;
 /// tool tab imports, downloads and edits them. Comment times are measured from the start of the object.
 /// </summary>
 /// <remarks>The original duration lasts until the last comment has left the screen.</remarks>
-[Display(Name = "コメント弾幕")]
+[Display(Name = nameof(Strings.Danmaku), ResourceType = typeof(Strings))]
 public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvider, ISplittable
 {
     public DanmakuDrawable()
@@ -23,32 +24,32 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
         ScanProperties<DanmakuDrawable>();
     }
 
-    [Display(Name = "コメント", Description = "ツールタブ「コメント弾幕」で取り込みや編集ができます")]
+    [Display(Name = nameof(Strings.Comments), Description = nameof(Strings.CommentsDescription), ResourceType = typeof(Strings))]
     public IExpressionProperty<DanmakuCommentList> Comments { get; } = Property.CreateExpression(DanmakuCommentList.Empty);
 
-    [Display(Name = "フォント")]
+    [Display(Name = nameof(Strings.Font), ResourceType = typeof(Strings))]
     public IExpressionProperty<FontFamily?> FontFamily { get; } = Property.CreateExpression<FontFamily?>(DefaultFont());
 
     [Range(10f, 400f)]
-    [Display(Name = "文字の大きさ (%)")]
+    [Display(Name = nameof(Strings.FontScale), ResourceType = typeof(Strings))]
     public IExpressionProperty<float> FontScale { get; } = Property.CreateExpression(100f);
 
     [Range(0.5f, 30f)]
-    [Display(Name = "流れるコメントの表示時間 (秒)")]
+    [Display(Name = nameof(Strings.ScrollDuration), ResourceType = typeof(Strings))]
     public IExpressionProperty<float> ScrollDuration { get; } = Property.CreateExpression(4f);
 
     [Range(0.5f, 30f)]
-    [Display(Name = "固定コメントの表示時間 (秒)")]
+    [Display(Name = nameof(Strings.FixedDuration), ResourceType = typeof(Strings))]
     public IExpressionProperty<float> FixedDuration { get; } = Property.CreateExpression(3f);
 
     [Range(0f, 50f)]
-    [Display(Name = "縁取りの太さ (%)", Description = "文字の大きさに対する縁取りの太さ")]
+    [Display(Name = nameof(Strings.OutlineWidth), Description = nameof(Strings.OutlineWidthDescription), ResourceType = typeof(Strings))]
     public IExpressionProperty<float> OutlineWidth { get; } = Property.CreateExpression(8f);
 
-    [Display(Name = "時刻のずれ", Description = "コメントの時刻にこの時間を足して表示します")]
+    [Display(Name = nameof(Strings.TimeOffset), Description = nameof(Strings.TimeOffsetDescription), ResourceType = typeof(Strings))]
     public IExpressionProperty<MediaTime> TimeOffset { get; } = Property.CreateExpression(MediaTime.Zero);
 
-    [Display(Name = "あふれたコメントを表示", Description = "空いている行がないとき、ランダムな高さに重ねて表示します")]
+    [Display(Name = nameof(Strings.ShowOverflow), Description = nameof(Strings.ShowOverflowDescription), ResourceType = typeof(Strings))]
     public IExpressionProperty<bool> ShowOverflow { get; } = Property.CreateExpression(true);
 
     private static FontFamily DefaultFont()

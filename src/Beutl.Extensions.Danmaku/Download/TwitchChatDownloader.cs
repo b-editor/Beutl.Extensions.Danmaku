@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Beutl.Extensions.Danmaku.Comments;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Download;
 
@@ -39,7 +40,8 @@ public sealed class TwitchChatDownloader(HttpClient httpClient)
             TwitchChatPage parsed = ParsePage(document.RootElement);
             messages.AddRange(parsed.Messages);
             if (parsed.Messages.Count > 0)
-                progress?.Report(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{messages.Count:N0} 件（{CommentWriter.FormatTime(TimeSpan.FromSeconds(parsed.Messages[^1].Offset))} まで）"));
+                progress?.Report(string.Format(Strings.DownloadProgress, messages.Count,
+                    CommentWriter.FormatTime(TimeSpan.FromSeconds(parsed.Messages[^1].Offset))));
 
             if (!parsed.HasNextPage || parsed.Cursor == null || parsed.Cursor == cursor)
                 break;
@@ -72,13 +74,13 @@ public sealed class TwitchChatDownloader(HttpClient httpClient)
                                                                   && errors.GetArrayLength() > 0)
         {
             string message = errors[0].TryGetProperty("message", out JsonElement m) ? m.GetString() ?? "" : "";
-            throw new CommentDownloadException($"Twitch がエラーを返しました: {message}");
+            throw new CommentDownloadException(string.Format(Strings.TwitchError, message));
         }
 
         if (!root.TryGetProperty("data", out JsonElement data)
             || !data.TryGetProperty("video", out JsonElement video) || video.ValueKind != JsonValueKind.Object)
         {
-            throw new CommentDownloadException("Twitch の動画が見つかりません");
+            throw new CommentDownloadException(Strings.TwitchVideoNotFound);
         }
 
         var messages = new List<(int, string)>();

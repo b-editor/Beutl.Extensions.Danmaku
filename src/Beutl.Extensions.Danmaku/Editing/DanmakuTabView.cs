@@ -13,29 +13,30 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Beutl.Extensions.Danmaku.Comments;
+using Beutl.Extensions.Danmaku.Properties;
 using FluentIcons.Common;
 using static Beutl.Extensions.Danmaku.Editing.BeutlUi;
 
 namespace Beutl.Extensions.Danmaku.Editing;
 
 /// <summary>
-/// The view of the "コメント弾幕" tool tab, laid out like Beutl's own tool tabs. It has two pages: the editor
+/// The view of the Danmaku tool tab, laid out like Beutl's own tool tabs. It has two pages: the editor
 /// (the comment list and the selected comment) and the import page, which takes the whole tab like a browser's
 /// download page. Its DataContext is a <see cref="DanmakuTabViewModel"/>.
 /// </summary>
 public sealed class DanmakuTabView : UserControl
 {
     private const double TimeWidth = 84;
-    private const double PositionWidth = 60;
-    private const double SizeWidth = 48;
-    private const double ColorWidth = 32;
+    private const double PositionWidth = 76;
+    private const double SizeWidth = 64;
+    private const double ColorWidth = 44;
     private const double DetailWidth = 380;
     private const double WideLayoutMinWidth = 820;
 
     // Filter box, column header and about three rows: the list never shrinks below this when stacked.
     private const double ListPaneMinHeight = 180;
 
-    private static readonly FilePickerFileType s_commentFiles = new("コメントファイル")
+    private static FilePickerFileType CommentFiles => new(Strings.CommentFiles)
     {
         Patterns = ["*.xml", "*.json", "*.txt", "*.tsv", "*.csv"],
     };
@@ -85,16 +86,16 @@ public sealed class DanmakuTabView : UserControl
         _list.SelectionChanged += OnSelectionChanged;
         _list.DoubleTapped += OnListDoubleTapped;
 
-        _deleteButton = IconButton(Icon.Delete, "削除 (Delete)", DeleteSelected);
+        _deleteButton = IconButton(Icon.Delete, Strings.DeleteShortcut, DeleteSelected);
         _deleteButton.IsEnabled = false;
-        _locateButton = IconButton(Icon.TargetArrow, "タイムラインで選択", () => ViewModel?.SelectTargetInTimeline());
+        _locateButton = IconButton(Icon.TargetArrow, Strings.SelectInTimeline, () => ViewModel?.SelectTargetInTimeline());
 
-        _detailNone = Secondary("コメントを選択してください");
+        _detailNone = Secondary(Strings.SelectComment);
         _detailMulti = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 8,
-            Children = { _detailMultiText, TextButton("削除", DeleteSelected) },
+            Children = { _detailMultiText, TextButton(Strings.Delete, DeleteSelected) },
         };
         _detailSingle = BuildDetailForm();
 
@@ -156,7 +157,7 @@ public sealed class DanmakuTabView : UserControl
             _viewModel.RowFocusRequested += OnRowFocusRequested;
             // The tab does not follow the timeline selection; the locate button says which element it edits.
             _subscriptions.Add(_viewModel.TargetDescription.Subscribe(description =>
-                ToolTip.SetTip(_locateButton, string.IsNullOrEmpty(description) ? "タイムラインで選択" : $"タイムラインで選択（{description}）")));
+                ToolTip.SetTip(_locateButton, string.IsNullOrEmpty(description) ? Strings.SelectInTimeline : string.Format(Strings.SelectTargetInTimeline, description))));
             _subscriptions.Add(_viewModel.TotalCount.Subscribe(count => ApplyLayout(_wide, showDetail: count > 0)));
         }
     }
@@ -211,11 +212,11 @@ public sealed class DanmakuTabView : UserControl
         count.Margin = new Thickness(0, 0, 4, 0);
         count[!TextBlock.TextProperty] = new Binding("Summary.Value");
 
-        var export = new MenuItem { Header = "ファイルに書き出し…" };
+        var export = new MenuItem { Header = Strings.ExportToFile };
         export.Click += (_, _) => ExportAsync();
-        var clear = new MenuItem { Header = "すべて削除" };
+        var clear = new MenuItem { Header = Strings.DeleteAll };
         clear.Click += (_, _) => ViewModel?.ClearAll();
-        Button more = IconButton(Icon.MoreVertical, "その他", () => { });
+        Button more = IconButton(Icon.MoreVertical, Strings.More, () => { });
         more.Flyout = new MenuFlyout { Items = { export, new Separator(), clear } };
 
         var actions = new StackPanel
@@ -224,9 +225,9 @@ public sealed class DanmakuTabView : UserControl
             Children =
             {
                 count,
-                IconButton(Icon.Add, "追加", () => ViewModel?.AddAtCurrentTime()),
+                IconButton(Icon.Add, Strings.Add, () => ViewModel?.AddAtCurrentTime()),
                 _deleteButton,
-                IconButton(Icon.ArrowDownload, "コメントを取り込む", () => ViewModel?.OpenImportPage()),
+                IconButton(Icon.ArrowDownload, Strings.ImportComments, () => ViewModel?.OpenImportPage()),
                 _locateButton,
                 more,
             },
@@ -235,7 +236,7 @@ public sealed class DanmakuTabView : UserControl
 
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         Grid.SetColumn(actions, 1);
-        row.Children.Add(BarTitle("コメント弾幕"));
+        row.Children.Add(BarTitle(Strings.Danmaku));
         row.Children.Add(actions);
         return ToolBar(row);
     }
@@ -244,19 +245,19 @@ public sealed class DanmakuTabView : UserControl
     {
         var filter = new TextBox
         {
-            PlaceholderText = "絞り込み",
+            PlaceholderText = Strings.Filter,
             InnerLeftContent = new FluentIcons.Avalonia.Fluent.FluentIcon { Icon = Icon.Search, FontSize = 14, Margin = new Thickness(8, 0, 0, 0), Opacity = 0.6 },
             Margin = new Thickness(0, 0, 0, 8),
             [!TextBox.TextProperty] = new Binding("Filter.Value") { Mode = BindingMode.TwoWay },
         };
         filter.Classes.Add("clearButton");
 
-        Grid header = Columns(Secondary("時刻"), Secondary("位置"), Secondary("大きさ"), Secondary("色"), Secondary("本文"));
+        Grid header = Columns(Secondary(Strings.Time), Secondary(Strings.Position), Secondary(Strings.Size), Secondary(Strings.Color), Secondary(Strings.Text));
         header.Margin = new Thickness(9, 0, 9, 4);
 
         TextBlock emptyTitle = EmptyTitle();
         emptyTitle[!TextBlock.TextProperty] = new Binding("EmptyMessage.Value");
-        Button import = TextButton("取り込む…", () => ViewModel?.OpenImportPage(), accent: true);
+        Button import = TextButton(Strings.Import, () => ViewModel?.OpenImportPage(), accent: true);
         import[!IsVisibleProperty] = new Binding("TotalCount.Value") { Converter = s_isZero };
         StackPanel empty = EmptyState(Icon.Comment, emptyTitle, import);
         empty[!IsVisibleProperty] = new Binding("EmptyMessage.Value") { Converter = StringConverters.IsNotNullOrEmpty };
@@ -324,19 +325,19 @@ public sealed class DanmakuTabView : UserControl
 
         TextBox time = Field(nameof(CommentRowViewModel.TimeText));
         time.Width = 100;
-        AddRow(form, 0, "時刻", new StackPanel
+        AddRow(form, 0, Strings.Time, new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 2,
             Children =
             {
                 time,
-                IconButton(Icon.ClockArrowDownload, "再生位置にする", () => WithRow(r => ViewModel?.SetTimeToPlayhead(r))),
-                IconButton(Icon.ArrowStepIn, "この時刻へ移動", () => WithRow(r => ViewModel?.Seek(r))),
+                IconButton(Icon.ClockArrowDownload, Strings.SetTimeToPlayhead, () => WithRow(r => ViewModel?.SetTimeToPlayhead(r))),
+                IconButton(Icon.ArrowStepIn, Strings.SeekToTime, () => WithRow(r => ViewModel?.Seek(r))),
             },
         });
-        AddRow(form, 1, "位置", Choice(DanmakuTabViewModel.PositionNames, nameof(CommentRowViewModel.PositionIndex)));
-        AddRow(form, 2, "大きさ", Choice(DanmakuTabViewModel.SizeNames, nameof(CommentRowViewModel.SizeIndex)));
+        AddRow(form, 1, Strings.Position, Choice(DanmakuTabViewModel.PositionNames, nameof(CommentRowViewModel.PositionIndex)));
+        AddRow(form, 2, Strings.Size, Choice(DanmakuTabViewModel.SizeNames, nameof(CommentRowViewModel.SizeIndex)));
 
         var palette = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach ((string name, string displayName, Beutl.Media.Color color) in CommentCommands.StandardColors)
@@ -360,16 +361,16 @@ public sealed class DanmakuTabView : UserControl
 
         TextBox colorText = Field(nameof(CommentRowViewModel.ColorText));
         colorText.Width = 100;
-        colorText.PlaceholderText = "白";
+        colorText.PlaceholderText = Strings.ColorWhite;
         colorText.HorizontalAlignment = HorizontalAlignment.Left;
-        ToolTip.SetTip(colorText, "#RRGGBB または色名");
-        AddRow(form, 3, "色", new StackPanel { Spacing = 2, Children = { palette, colorText } }, alignTop: true);
+        ToolTip.SetTip(colorText, Strings.ColorInputHint);
+        AddRow(form, 3, Strings.Color, new StackPanel { Spacing = 2, Children = { palette, colorText } }, alignTop: true);
 
         TextBox text = Field(nameof(CommentRowViewModel.Text));
         text.TextWrapping = TextWrapping.Wrap;
         text.MinHeight = 56;
-        ToolTip.SetTip(text, "Shift+Enter で改行");
-        AddRow(form, 4, "本文", text, alignTop: true);
+        ToolTip.SetTip(text, Strings.NewLineHint);
+        AddRow(form, 4, Strings.Text, text, alignTop: true);
         return form;
     }
 
@@ -474,7 +475,7 @@ public sealed class DanmakuTabView : UserControl
         IReadOnlyList<CommentRowViewModel> rows = SelectedRows();
         _detailNone.IsVisible = rows.Count == 0;
         _detailMulti.IsVisible = rows.Count > 1;
-        _detailMultiText.Text = $"{rows.Count} 件を選択中";
+        _detailMultiText.Text = string.Format(Strings.SelectedCommentCount, rows.Count);
         _detailSingle.IsVisible = rows.Count == 1;
         _detailSingle.DataContext = rows.Count == 1 ? rows[0] : null;
         _deleteButton.IsEnabled = rows.Count > 0;
@@ -522,7 +523,7 @@ public sealed class DanmakuTabView : UserControl
 
     private Control BuildImportPage()
     {
-        var url = new TextBox { PlaceholderText = "ニコニコ動画・YouTube・Twitch の URL" };
+        var url = new TextBox { PlaceholderText = Strings.SourceUrlHint };
         url.Classes.Add("clearButton");
         url[!TextBox.TextProperty] = new Binding("Url.Value") { Mode = BindingMode.TwoWay };
         url.KeyDown += async (_, e) =>
@@ -533,35 +534,35 @@ public sealed class DanmakuTabView : UserControl
                 await vm.DownloadAsync();
             }
         };
-        Button download = TextButton("ダウンロード", async () => await (ViewModel?.DownloadAsync() ?? Task.CompletedTask), accent: true);
+        Button download = TextButton(Strings.Download, async () => await (ViewModel?.DownloadAsync() ?? Task.CompletedTask), accent: true);
         download[!IsEnabledProperty] = new Binding("IsDownloading.Value") { Converter = BoolConverters.Not };
         var urlRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
         Grid.SetColumn(download, 1);
         urlRow.Children.Add(url);
         urlRow.Children.Add(download);
 
-        Button file = TextButton("ファイルを選ぶ…", ImportAsync);
+        Button file = TextButton(Strings.ChooseFile, ImportAsync);
         file.HorizontalAlignment = HorizontalAlignment.Left;
-        ToolTip.SetTip(file, "XML・JSON・テキスト");
+        ToolTip.SetTip(file, Strings.FileFormats);
 
         var mode = new ComboBox
         {
-            ItemsSource = new[] { "置き換える", "追加する" },
+            ItemsSource = new[] { Strings.Replace, Strings.Append },
             MinWidth = 140,
             [!Avalonia.Controls.Primitives.SelectingItemsControl.SelectedIndexProperty] = new Binding("ReplaceOnImport.Value") { Mode = BindingMode.TwoWay, Converter = ReplaceModeConverter.Instance },
         };
 
         Grid sources = Rows();
         AddRow(sources, 0, "URL", urlRow);
-        AddRow(sources, 1, "ファイル", file);
-        AddRow(sources, 2, "既存のコメント", mode);
+        AddRow(sources, 1, Strings.File, file);
+        AddRow(sources, 2, Strings.ExistingComments, mode);
 
         TextBlock notice = Secondary();
         WithResource(notice, TextBlock.ForegroundProperty, "SystemFillColorCriticalBrush");
         notice[!TextBlock.TextProperty] = new Binding("ImportNotice.Value");
         notice[!IsVisibleProperty] = new Binding("ImportNotice.Value") { Converter = StringConverters.IsNotNullOrEmpty };
 
-        TextBlock historyTitle = new() { Text = "履歴", [!IsVisibleProperty] = new Binding("ImportJobs.Count") { Converter = s_isPositive } };
+        TextBlock historyTitle = new() { Text = Strings.History, [!IsVisibleProperty] = new Binding("ImportJobs.Count") { Converter = s_isPositive } };
         var jobs = new ItemsControl
         {
             // Rows draw a separator above themselves; the first one tucks under the group's border.
@@ -572,7 +573,7 @@ public sealed class DanmakuTabView : UserControl
         Border history = Group(jobs, new Thickness(0));
         history[!IsVisibleProperty] = new Binding("ImportJobs.Count") { Converter = s_isPositive };
 
-        return BuildPage("コメントを取り込む", new StackPanel
+        return BuildPage(Strings.ImportComments, new StackPanel
         {
             Spacing = 12,
             Children = { Group(sources), notice, historyTitle, history },
@@ -585,7 +586,7 @@ public sealed class DanmakuTabView : UserControl
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
         TextBlock titleText = BarTitle(title);
         Grid.SetColumn(titleText, 1);
-        row.Children.Add(IconButton(Icon.ArrowLeft, "戻る (Esc)", () => ViewModel?.CloseImportPage()));
+        row.Children.Add(IconButton(Icon.ArrowLeft, Strings.BackShortcut, () => ViewModel?.CloseImportPage()));
         row.Children.Add(titleText);
         Border bar = ToolBar(row);
 
@@ -633,7 +634,7 @@ public sealed class DanmakuTabView : UserControl
         row.Children.Add(pill);
         if (job.CanCancel)
         {
-            Button cancel = IconButton(Icon.Dismiss, "中止", job.Cancel);
+            Button cancel = IconButton(Icon.Dismiss, Strings.Cancel, job.Cancel);
             cancel.VerticalAlignment = VerticalAlignment.Top;
             cancel[!IsVisibleProperty] = new Binding(nameof(ImportJobViewModel.IsRunning));
             Grid.SetColumn(cancel, 2);
@@ -661,10 +662,10 @@ public sealed class DanmakuTabView : UserControl
         {
             (string label, string key) = job.State switch
             {
-                ImportJobState.Running => ("取得中", "SubtleFillColorSecondaryBrush"),
-                ImportJobState.Succeeded => ("完了", "SystemFillColorSuccessBackgroundBrush"),
-                ImportJobState.Failed => ("失敗", "SystemFillColorCriticalBackgroundBrush"),
-                _ => ("中止", "SystemFillColorCautionBackgroundBrush"),
+                ImportJobState.Running => (Strings.StateDownloading, "SubtleFillColorSecondaryBrush"),
+                ImportJobState.Succeeded => (Strings.StateCompleted, "SystemFillColorSuccessBackgroundBrush"),
+                ImportJobState.Failed => (Strings.StateFailed, "SystemFillColorCriticalBackgroundBrush"),
+                _ => (Strings.StateCanceled, "SystemFillColorCautionBackgroundBrush"),
             };
             text.Text = label;
             background?.Dispose();
@@ -689,9 +690,9 @@ public sealed class DanmakuTabView : UserControl
 
         IReadOnlyList<IStorageFile> files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "コメントファイルを開く",
+            Title = Strings.OpenCommentFile,
             AllowMultiple = false,
-            FileTypeFilter = [s_commentFiles, FilePickerFileTypes.All],
+            FileTypeFilter = [CommentFiles, FilePickerFileTypes.All],
         });
         if (files.Count > 0 && files[0].TryGetLocalPath() is { } path)
             vm.ImportFile(path);
@@ -704,16 +705,16 @@ public sealed class DanmakuTabView : UserControl
 
         IStorageFile? file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "コメントを書き出す",
+            Title = Strings.ExportComments,
             SuggestedFileName = "comments.txt",
             DefaultExtension = "txt",
-            FileTypeChoices = [new FilePickerFileType("テキスト形式のコメント") { Patterns = ["*.txt"] }],
+            FileTypeChoices = [new FilePickerFileType(Strings.TextCommentFiles) { Patterns = ["*.txt"] }],
         });
         if (file?.TryGetLocalPath() is { } path)
             vm.ExportFile(path);
     }
 
-    /// <summary>"置き換える" (index 0) when imports replace the comments, "追加する" (index 1) when they add to them.</summary>
+    /// <summary>Index 0 replaces the comments; index 1 appends to them.</summary>
     private sealed class ReplaceModeConverter : IValueConverter
     {
         public static readonly ReplaceModeConverter Instance = new();

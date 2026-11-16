@@ -1,4 +1,5 @@
 using Beutl.Extensions.Danmaku.Comments;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Download;
 
@@ -20,11 +21,11 @@ public sealed class CommentDownloader
     public async Task<List<DanmakuComment>> DownloadAsync(string url, IProgress<string>? progress, CancellationToken cancellationToken)
     {
         CommentSource source = CommentSourceDetector.Detect(url)
-                               ?? throw new CommentDownloadException("対応していない URL です");
+                               ?? throw new CommentDownloadException(Strings.UnsupportedUrl);
 
         if (source.Site == CommentSite.Twitch)
         {
-            progress?.Report("取得中…");
+            progress?.Report(Strings.Downloading);
             try
             {
                 return await new TwitchChatDownloader(_httpClient).DownloadAsync(source.VideoId, progress, cancellationToken)
@@ -32,14 +33,14 @@ public sealed class CommentDownloader
             }
             catch (HttpRequestException ex)
             {
-                throw new CommentDownloadException($"Twitch に接続できませんでした: {ex.Message}", ex);
+                throw new CommentDownloadException(string.Format(Strings.TwitchConnectionFailed, ex.Message), ex);
             }
         }
 
         string executable = _locateYtDlp()
                             ?? throw new CommentDownloadException(
-                                "yt-dlp が見つかりません（yt-dlp 拡張機能でインストールできます）");
-        progress?.Report("取得中…");
+                                Strings.YtDlpNotFound);
+        progress?.Report(Strings.Downloading);
         return await new YtDlpCommentDownloader(executable).DownloadAsync(source, progress, cancellationToken).ConfigureAwait(false);
     }
 }

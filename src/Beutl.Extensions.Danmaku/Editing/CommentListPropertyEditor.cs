@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Beutl.Extensibility;
 using Beutl.Extensions.Danmaku.Comments;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Editing;
 
@@ -15,7 +16,7 @@ public sealed class CommentListPropertyEditorExtension : PropertyEditorExtension
 {
     public override string Name => "Danmaku comment list editor";
 
-    public override string DisplayName => "コメント弾幕のコメント一覧";
+    public override string DisplayName => Strings.CommentListEditor;
 
     protected override void RegisterEditors(PropertyEditorRegistry registry)
     {
@@ -67,7 +68,7 @@ public sealed class CommentListPropertyEditorExtension : PropertyEditorExtension
 
         private readonly Context _context;
         private readonly TextBlock _count = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0, 0, 0) };
-        private readonly Button _edit = new() { Content = "編集", VerticalAlignment = VerticalAlignment.Center };
+        private readonly Button _edit = new() { Content = Strings.Edit, VerticalAlignment = VerticalAlignment.Center };
         private IDisposable? _subscription;
 
         public Summary(Context context)
@@ -87,7 +88,7 @@ public sealed class CommentListPropertyEditorExtension : PropertyEditorExtension
             if (context.Adapter.Description is { Length: > 0 } description)
                 ToolTip.SetTip(header, description);
 
-            ToolTip.SetTip(_edit, "このコメント弾幕のコメントを、タブで取り込み・ダウンロード・編集します");
+            ToolTip.SetTip(_edit, Strings.EditCommentsDescription);
             _edit.Click += (_, _) =>
             {
                 if (_context.EditorContext is { } editor && _context.Owner is { } drawable)
@@ -130,7 +131,7 @@ public sealed class CommentListPropertyEditorExtension : PropertyEditorExtension
         private sealed class Observer(Summary owner) : IObserver<DanmakuCommentList?>
         {
             public void OnNext(DanmakuCommentList? value) =>
-                Dispatcher.UIThread.Post(() => owner._count.Text = $"{value?.Count ?? 0} 件");
+                Dispatcher.UIThread.Post(() => owner._count.Text = string.Format(Strings.CommentCount, value?.Count ?? 0));
 
             public void OnError(Exception error)
             {

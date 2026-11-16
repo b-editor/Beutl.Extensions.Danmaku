@@ -1,4 +1,5 @@
 using Beutl.Media;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Comments;
 
@@ -36,19 +37,19 @@ public static class CommentCommands
         ["black2"] = Rgb(0x666666),
     };
 
-    /// <summary>The basic colours every niconico user can pick, with their Japanese names, for the colour palette.</summary>
-    public static IReadOnlyList<(string Name, string DisplayName, Color Color)> StandardColors { get; } =
+    /// <summary>The basic colours every niconico user can pick, with localized names for the colour palette.</summary>
+    public static IReadOnlyList<(string Name, string DisplayName, Color Color)> StandardColors =>
     [
-        ("white", "白", Rgb(0xFFFFFF)),
-        ("red", "赤", Rgb(0xFF0000)),
-        ("pink", "ピンク", Rgb(0xFF8080)),
-        ("orange", "オレンジ", Rgb(0xFFC000)),
-        ("yellow", "黄", Rgb(0xFFFF00)),
-        ("green", "緑", Rgb(0x00FF00)),
-        ("cyan", "水色", Rgb(0x00FFFF)),
-        ("blue", "青", Rgb(0x0000FF)),
-        ("purple", "紫", Rgb(0xC000FF)),
-        ("black", "黒", Rgb(0x000000)),
+        ("white", Strings.ColorWhite, Rgb(0xFFFFFF)),
+        ("red", Strings.ColorRed, Rgb(0xFF0000)),
+        ("pink", Strings.ColorPink, Rgb(0xFF8080)),
+        ("orange", Strings.ColorOrange, Rgb(0xFFC000)),
+        ("yellow", Strings.ColorYellow, Rgb(0xFFFF00)),
+        ("green", Strings.ColorGreen, Rgb(0x00FF00)),
+        ("cyan", Strings.ColorCyan, Rgb(0x00FFFF)),
+        ("blue", Strings.ColorBlue, Rgb(0x0000FF)),
+        ("purple", Strings.ColorPurple, Rgb(0xC000FF)),
+        ("black", Strings.ColorBlack, Rgb(0x000000)),
     ];
 
     /// <summary>Applies the commands to a comment. Returns null when a command hides the comment.</summary>

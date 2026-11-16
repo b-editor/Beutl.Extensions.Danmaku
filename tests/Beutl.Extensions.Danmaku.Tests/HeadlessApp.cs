@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Headless;
-using Avalonia.Themes.Fluent;
+using Avalonia.Markup.Xaml;
 using Beutl.Extensions.Danmaku.Tests;
 
 [assembly: AvaloniaTestApplication(typeof(HeadlessApp))]
@@ -17,6 +17,6 @@ public sealed class HeadlessApp : Application
 
     public override void Initialize()
     {
-        Styles.Add(new FluentTheme());
+        AvaloniaXamlLoader.Load(this);
     }
 }

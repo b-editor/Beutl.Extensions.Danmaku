@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Danmaku" xml:space="preserve">
+    <value>Danmaku</value>
+  </data>
+  <data name="DanmakuDescription" xml:space="preserve">
+    <value>Display imported or downloaded comments scrolling across the screen.</value>
+  </data>
+  <data name="CommentListEditor" xml:space="preserve">
+    <value>Danmaku comment list</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>Comments</value>
+  </data>
+  <data name="CommentsDescription" xml:space="preserve">
+    <value>Import and edit comments in the Danmaku tool tab.</value>
+  </data>
+  <data name="Font" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="FontScale" xml:space="preserve">
+    <value>Font size (%)</value>
+  </data>
+  <data name="ScrollDuration" xml:space="preserve">
+    <value>Scrolling duration (seconds)</value>
+  </data>
+  <data name="FixedDuration" xml:space="preserve">
+    <value>Fixed duration (seconds)</value>
+  </data>
+  <data name="OutlineWidth" xml:space="preserve">
+    <value>Outline width (%)</value>
+  </data>
+  <data name="OutlineWidthDescription" xml:space="preserve">
+    <value>Outline width relative to the font size.</value>
+  </data>
+  <data name="TimeOffset" xml:space="preserve">
+    <value>Time offset</value>
+  </data>
+  <data name="TimeOffsetDescription" xml:space="preserve">
+    <value>Add this offset to the comment times.</value>
+  </data>
+  <data name="ShowOverflow" xml:space="preserve">
+    <value>Show overflow comments</value>
+  </data>
+  <data name="ShowOverflowDescription" xml:space="preserve">
+    <value>Overlap comments at random heights when no row is available.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="EditCommentsDescription" xml:space="preserve">
+    <value>Import, download and edit this object's comments in the Danmaku tab.</value>
+  </data>
+  <data name="CommentCount" xml:space="preserve">
+    <value>Comments: {0:N0}</value>
+  </data>
+  <data name="FilteredCommentCount" xml:space="preserve">
+    <value>Comments: {0:N0} / {1:N0}</value>
+  </data>
+  <data name="SelectedCommentCount" xml:space="preserve">
+    <value>{0:N0} selected</value>
+  </data>
+  <data name="OpenFromEdit" xml:space="preserve">
+    <value>Open this tab using the Edit button.</value>
+  </data>
+  <data name="ElementDeleted" xml:space="preserve">
+    <value>The element was deleted.</value>
+  </data>
+  <data name="PositionScroll" xml:space="preserve">
+    <value>Scrolling</value>
+  </data>
+  <data name="PositionTop" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="PositionBottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="SizeMedium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="SizeBig" xml:space="preserve">
+    <value>Large</value>
+  </data>
+  <data name="SizeSmall" xml:space="preserve">
+    <value>Small</value>
+  </data>
+  <data name="NewComment" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="AddComment" xml:space="preserve">
+    <value>Add comment</value>
+  </data>
+  <data name="DeleteComment" xml:space="preserve">
+    <value>Delete comments</value>
+  </data>
+  <data name="DeleteAllComments" xml:space="preserve">
+    <value>Delete all comments</value>
+  </data>
+  <data name="ImportComments" xml:space="preserve">
+    <value>Import comments</value>
+  </data>
+  <data name="ImportCommentsHistory" xml:space="preserve">
+    <value>Import comments</value>
+  </data>
+  <data name="DownloadComments" xml:space="preserve">
+    <value>Download comments</value>
+  </data>
+  <data name="EditComment" xml:space="preserve">
+    <value>Edit comment</value>
+  </data>
+  <data name="NoTarget" xml:space="preserve">
+    <value>There is no object to edit.</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Reading" xml:space="preserve">
+    <value>Reading…</value>
+  </data>
+  <data name="ReadFailed" xml:space="preserve">
+    <value>Could not read the file: {0}</value>
+  </data>
+  <data name="NoCommentsFound" xml:space="preserve">
+    <value>No comments were found.</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>Comments exported: {0:N0}</value>
+  </data>
+  <data name="ExportFailed" xml:space="preserve">
+    <value>Could not export the comments: {0}</value>
+  </data>
+  <data name="UnsupportedUrl" xml:space="preserve">
+    <value>This URL is not supported.</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>Downloading…</value>
+  </data>
+  <data name="NoDownloadedComments" xml:space="preserve">
+    <value>No comments were available.</value>
+  </data>
+  <data name="TargetChanged" xml:space="preserve">
+    <value>The target changed, so the comments were not applied.</value>
+  </data>
+  <data name="DownloadCanceled" xml:space="preserve">
+    <value>Canceled.</value>
+  </data>
+  <data name="DownloadFailed" xml:space="preserve">
+    <value>Could not download the comments: {0}</value>
+  </data>
+  <data name="ImportSucceeded" xml:space="preserve">
+    <value>Comments imported: {0:N0}</value>
+  </data>
+  <data name="AppendSucceeded" xml:space="preserve">
+    <value>Comments added: {0:N0}</value>
+  </data>
+  <data name="InvalidValueReverted" xml:space="preserve">
+    <value>The invalid value was reverted.</value>
+  </data>
+  <data name="NamedElement" xml:space="preserve">
+    <value>Element “{0}”</value>
+  </data>
+  <data name="ElementAtTime" xml:space="preserve">
+    <value>Element starting at {0}</value>
+  </data>
+  <data name="NoComments" xml:space="preserve">
+    <value>No comments yet.</value>
+  </data>
+  <data name="NoMatchingComments" xml:space="preserve">
+    <value>No matching comments.</value>
+  </data>
+  <data name="CommentFiles" xml:space="preserve">
+    <value>Comment files</value>
+  </data>
+  <data name="DeleteShortcut" xml:space="preserve">
+    <value>Delete (Delete)</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="SelectInTimeline" xml:space="preserve">
+    <value>Select in timeline</value>
+  </data>
+  <data name="SelectTargetInTimeline" xml:space="preserve">
+    <value>Select in timeline ({0})</value>
+  </data>
+  <data name="SelectComment" xml:space="preserve">
+    <value>Select a comment.</value>
+  </data>
+  <data name="ExportToFile" xml:space="preserve">
+    <value>Export to file…</value>
+  </data>
+  <data name="DeleteAll" xml:space="preserve">
+    <value>Delete all</value>
+  </data>
+  <data name="More" xml:space="preserve">
+    <value>More</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="Import" xml:space="preserve">
+    <value>Import…</value>
+  </data>
+  <data name="SetTimeToPlayhead" xml:space="preserve">
+    <value>Use playhead time</value>
+  </data>
+  <data name="SeekToTime" xml:space="preserve">
+    <value>Go to this time</value>
+  </data>
+  <data name="ColorInputHint" xml:space="preserve">
+    <value>#RRGGBB or a color name</value>
+  </data>
+  <data name="NewLineHint" xml:space="preserve">
+    <value>Shift+Enter for a new line</value>
+  </data>
+  <data name="SourceUrlHint" xml:space="preserve">
+    <value>Niconico, YouTube or Twitch URL</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="ChooseFile" xml:space="preserve">
+    <value>Choose file…</value>
+  </data>
+  <data name="FileFormats" xml:space="preserve">
+    <value>XML, JSON or text</value>
+  </data>
+  <data name="Replace" xml:space="preserve">
+    <value>Replace</value>
+  </data>
+  <data name="Append" xml:space="preserve">
+    <value>Append</value>
+  </data>
+  <data name="ExistingComments" xml:space="preserve">
+    <value>Existing comments</value>
+  </data>
+  <data name="History" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="BackShortcut" xml:space="preserve">
+    <value>Back (Esc)</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="StateDownloading" xml:space="preserve">
+    <value>Downloading</value>
+  </data>
+  <data name="StateCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="StateFailed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="StateCanceled" xml:space="preserve">
+    <value>Canceled</value>
+  </data>
+  <data name="OpenCommentFile" xml:space="preserve">
+    <value>Open comment file</value>
+  </data>
+  <data name="ExportComments" xml:space="preserve">
+    <value>Export comments</value>
+  </data>
+  <data name="TextCommentFiles" xml:space="preserve">
+    <value>Text comment files</value>
+  </data>
+  <data name="ColorWhite" xml:space="preserve">
+    <value>White</value>
+  </data>
+  <data name="ColorRed" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="ColorPink" xml:space="preserve">
+    <value>Pink</value>
+  </data>
+  <data name="ColorOrange" xml:space="preserve">
+    <value>Orange</value>
+  </data>
+  <data name="ColorYellow" xml:space="preserve">
+    <value>Yellow</value>
+  </data>
+  <data name="ColorGreen" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="ColorCyan" xml:space="preserve">
+    <value>Cyan</value>
+  </data>
+  <data name="ColorBlue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="ColorPurple" xml:space="preserve">
+    <value>Purple</value>
+  </data>
+  <data name="ColorBlack" xml:space="preserve">
+    <value>Black</value>
+  </data>
+  <data name="Niconico" xml:space="preserve">
+    <value>Niconico</value>
+  </data>
+  <data name="TwitchConnectionFailed" xml:space="preserve">
+    <value>Could not connect to Twitch: {0}</value>
+  </data>
+  <data name="YtDlpNotFound" xml:space="preserve">
+    <value>yt-dlp was not found. You can install it with the yt-dlp extension.</value>
+  </data>
+  <data name="YtDlpUnsupportedSite" xml:space="preserve">
+    <value>This site is not supported by yt-dlp.</value>
+  </data>
+  <data name="NoChatReplay" xml:space="preserve">
+    <value>No chat replay is available.</value>
+  </data>
+  <data name="CouldNotDownloadComments" xml:space="preserve">
+    <value>Could not download the comments.</value>
+  </data>
+  <data name="DownloadProgress" xml:space="preserve">
+    <value>Comments: {0:N0} (up to {1})</value>
+  </data>
+  <data name="TwitchError" xml:space="preserve">
+    <value>Twitch returned an error: {0}</value>
+  </data>
+  <data name="TwitchVideoNotFound" xml:space="preserve">
+    <value>The Twitch video was not found.</value>
+  </data>
+  <data name="CommentListMustBeArray" xml:space="preserve">
+    <value>The comment list must be an array.</value>
+  </data>
+  <data name="CommentMustBeArray" xml:space="preserve">
+    <value>Each comment must be an array of [seconds, commands, text].</value>
+  </data>
+  <data name="CommentArrayTooLong" xml:space="preserve">
+    <value>The comment array has too many elements.</value>
+  </data>
+  <data name="ExportHeader" xml:space="preserve">
+    <value># Time	Commands	Text
+</value>
+  </data>
+</root>

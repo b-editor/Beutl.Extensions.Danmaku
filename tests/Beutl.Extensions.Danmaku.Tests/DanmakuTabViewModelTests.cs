@@ -9,6 +9,7 @@ using Beutl.ProjectSystem;
 namespace Beutl.Extensions.Danmaku.Tests;
 
 // Runs on the Avalonia UI thread, where the editor runs the tool tab.
+[SetUICulture("ja-JP")]
 public class DanmakuTabViewModelTests
 {
     private static string WriteFile(string content)

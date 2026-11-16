@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Beutl.Extensions.Danmaku.Comments;
+using Beutl.Extensions.Danmaku.Properties;
 
 namespace Beutl.Extensions.Danmaku.Download;
 
@@ -44,7 +45,7 @@ public sealed class YtDlpCommentDownloader
     {
         CommentSite.Niconico => "comments",
         CommentSite.YouTube => "live_chat",
-        _ => throw new ArgumentOutOfRangeException(nameof(site), site, "yt-dlp では取得できないサイトです。"),
+        _ => throw new ArgumentOutOfRangeException(nameof(site), site, Strings.YtDlpUnsupportedSite),
     };
 
     public static IReadOnlyList<string> BuildArguments(CommentSource source, string outputDirectory)
@@ -123,8 +124,8 @@ public sealed class YtDlpCommentDownloader
                     // for YouTube) appear on successful runs too and would mislead.
                     reason = errors.LastOrDefault(e => e.StartsWith("ERROR", StringComparison.Ordinal));
                 string message = source.Site == CommentSite.YouTube
-                    ? "チャットのリプレイがありません"
-                    : "コメントを取得できませんでした";
+                    ? Strings.NoChatReplay
+                    : Strings.CouldNotDownloadComments;
                 throw new CommentDownloadException(reason == null ? message : $"{message}\n{reason}");
             }
 
