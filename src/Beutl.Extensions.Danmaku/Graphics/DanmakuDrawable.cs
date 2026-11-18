@@ -52,10 +52,14 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
     [Display(Name = nameof(Strings.ShowOverflow), Description = nameof(Strings.ShowOverflowDescription), ResourceType = typeof(Strings))]
     public IExpressionProperty<bool> ShowOverflow { get; } = Property.CreateExpression(true);
 
+    // The fonts of the host that loaded the extension, which new objects take their default font from; null outside
+    // a host. The constructor has no composition context to read them from.
+    internal static FontManager? HostFonts { get; set; }
+
     private static FontFamily DefaultFont()
     {
         var notoSansJp = new FontFamily("Noto Sans JP");
-        return FontManager.Instance.IsRegistered(notoSansJp) ? notoSansJp : Media.FontFamily.Default;
+        return HostFonts?.IsRegistered(notoSansJp) == true ? notoSansJp : Media.FontFamily.Default;
     }
 
     public bool HasOriginalDuration()
@@ -94,6 +98,7 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
         private readonly Dictionary<(Color, int), Pen.Resource> _pens = [];
         private DanmakuFrameLayout? _layout;
         private TimeSpan _commentTime;
+        private FontManager? _fonts;
 
         protected override Size MeasureCore(Size availableSize)
         {
@@ -145,12 +150,22 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
 
         partial void PostReconcile(DanmakuDrawable obj, CompositionContext context)
         {
+            bool changed = false;
+            if (!ReferenceEquals(_fonts, context.Fonts))
+            {
+                _fonts = context.Fonts;
+                changed = true;
+            }
+
             TimeSpan time = (context.Time - obj.TimeRange.Value.Start - TimeOffset).ToTimeSpan();
             if (time != _commentTime)
             {
                 _commentTime = time;
-                Version++;
+                changed = true;
             }
+
+            if (changed)
+                Version++;
         }
 
         partial void PostDispose(bool disposing)
@@ -173,10 +188,11 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
                 TimeSpan.FromSeconds(Math.Max(0.1, FixedDuration)),
                 Math.Max(0.01f, FontScale / 100f),
                 ShowOverflow: ShowOverflow);
+            FontManager fonts = _fonts ?? throw new InvalidOperationException("Text layout requires CompositionContext.Fonts.");
             FontFamily font = FontFamily ?? Media.FontFamily.Default;
 
-            if (_layout == null || !_layout.Matches(comments, settings, font))
-                _layout = new DanmakuFrameLayout(comments, settings, font);
+            if (_layout == null || !_layout.Matches(fonts, comments, settings, font))
+                _layout = new DanmakuFrameLayout(fonts, comments, settings, font);
 
             return _layout;
         }

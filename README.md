@@ -110,7 +110,7 @@ The extension supports the same languages as Beutl: English, Japanese, Simplifie
 
 表示用の文字列は `src/Beutl.Extensions.Danmaku/Properties/Strings.resx`（英語）と `Strings.ja.resx`、`Strings.zh-CN.resx`、`Strings.ko-KR.resx`、`Strings.es.resx` で管理します。新しい言語は同じキーを持つ `Strings.<言語コード>.resx` を追加してください。`{0}` などの書式引数は翻訳先でも保持します。文字列のC#クラスと翻訳リソースのDLLはビルド時に自動生成されます。
 
-`Beutl.Extensibility.Sdk` 2.0.0-preview.13 と .NET 11 SDK でビルドします。
+`Beutl.Extensibility.Sdk` 2.0.0-preview.14 と .NET 11 SDK でビルドします。
 
 ```bash
 dotnet build src/Beutl.Extensions.Danmaku
