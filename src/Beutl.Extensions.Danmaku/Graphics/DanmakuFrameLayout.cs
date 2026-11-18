@@ -12,13 +12,15 @@ namespace Beutl.Extensions.Danmaku.Graphics;
 /// </remarks>
 internal sealed class DanmakuFrameLayout
 {
+    private readonly FontManager _fonts;
     private readonly IReadOnlyList<DanmakuComment> _comments;
     private readonly FontFamily _font;
     private readonly FormattedText[]?[] _lines;
     private readonly List<FormattedText> _measuring = [];
 
-    public DanmakuFrameLayout(IReadOnlyList<DanmakuComment> comments, DanmakuLayoutSettings settings, FontFamily font)
+    public DanmakuFrameLayout(FontManager fonts, IReadOnlyList<DanmakuComment> comments, DanmakuLayoutSettings settings, FontFamily font)
     {
+        _fonts = fonts;
         _comments = comments;
         _font = font;
         Settings = settings;
@@ -37,9 +39,9 @@ internal sealed class DanmakuFrameLayout
 
     public TimeSpan LongestDuration { get; }
 
-    public bool Matches(IReadOnlyList<DanmakuComment> comments, DanmakuLayoutSettings settings, FontFamily font)
+    public bool Matches(FontManager fonts, IReadOnlyList<DanmakuComment> comments, DanmakuLayoutSettings settings, FontFamily font)
     {
-        return ReferenceEquals(comments, _comments) && settings == Settings && font.Equals(_font);
+        return ReferenceEquals(fonts, _fonts) && ReferenceEquals(comments, _comments) && settings == Settings && font.Equals(_font);
     }
 
     public int FindFirstStartingAfter(TimeSpan time)
@@ -88,7 +90,7 @@ internal sealed class DanmakuFrameLayout
 
     private FormattedText CreateText(string text, float fontSize)
     {
-        return new FormattedText
+        return new FormattedText(_fonts)
         {
             Font = _font,
             Size = Math.Max(1, fontSize),
