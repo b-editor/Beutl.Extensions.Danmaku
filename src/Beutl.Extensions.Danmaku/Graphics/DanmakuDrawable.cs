@@ -7,6 +7,7 @@ using Beutl.Extensions.Danmaku.Properties;
 using Beutl.Graphics;
 using Beutl.Graphics.Rendering;
 using Beutl.Media;
+using Beutl.Media.Decoding;
 using Beutl.Media.TextFormatting;
 
 namespace Beutl.Extensions.Danmaku.Graphics;
@@ -67,7 +68,8 @@ public sealed partial class DanmakuDrawable : Drawable, IOriginalDurationProvide
         return Comments.Value.Count > 0;
     }
 
-    public bool TryGetOriginalDuration(out MediaTime timeSpan)
+    // The comments live in the object, so there is no media to open with the decoders.
+    public bool TryGetOriginalDuration(out MediaTime timeSpan, DecoderRegistry? decoders = null)
     {
         timeSpan = MediaTime.Zero;
         DanmakuCommentList comments = Comments.Value;
